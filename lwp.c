@@ -4,6 +4,7 @@
 /* sched_one is PREVIOUS
    sched_two is NEXT */
 static thread head = NULL;
+static Scheduler current_sched = {NULL, NULL, &admit, &remove, &next, &qlen}
 
 void init() {
     /* don't need? */
@@ -119,13 +120,18 @@ tid_t lwp_create(lwpfun function, void *argument) {
 
     stack_top[-1] = &lwp_wrap; /* return address, calls actual function */
     stack_top[-2] = 0; /* fake base pointer */
-    cont->state.rbp = 0;
+
+    /* setting new thread */
+    cont->state.rbp = 0; /* any values, will be teared down anyways */
     cont->state.rsp = 0;
     cont->state.rdi = function;
     cont->state.rsi = argument;
     cont->tid = thread_id;
     thread_id = thread_id + 1;
     /* Need to set anything else? */
+
+    /* admit thread to scheduler */
+    current_scheduler->admit(cont);
 
     return cont->tid;
 }
