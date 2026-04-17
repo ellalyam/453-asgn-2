@@ -81,28 +81,53 @@ typedef struct scheduler {
 
 
 /* LWP */
+static long thread_id = 1;
+
+static void lwp_wrap(lwpfun fun, void *arg) {
+    /* Call the given lwpfunction with the given argument.
+    * Calls lwp exit() with its return value
+    */
+    int rval;
+    rval=fun(arg);
+    lwp exit(rval);
+}
+
 tid_t lwp_create(lwpfun function, void *argument) {
     /* Create the context */
-    thread contex = malloc(sizeof(context));
+    thread cont = malloc(sizeof(context));
 
     /* Create the stack */
     struct rlimit rl;
     getrlimit(RLIMIT_STACK, &rl);
     long stack_size = rl.rlim_cur;
     if(stack_size == RLIM_INFINITY) {
-        stack_size = 8000000;
+        stack_size = 8388608;
     }
 
-    void *stack = mmap(NULL, stack_size, PROT READ|PROT WRITE, MAP PRIVATE|MAP ANONYMOUS|MAP STACK, -1, 0)
+    void *stack_base = mmap(NULL, stack_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0);
 
-    if(stack==MAP_FAILED) {
+    if(stack_base==MAP_FAILED) {
         /* Deal with error */
         return NULL;
     }
 
     /* Fake stack frame */
+    cont->stacksize = (unsigned long *)stack_size;
+    cont->stack = stack_base;
 
-    return;
+    void *stack_top = stack_base + stack_size;
+
+    stack_top[-1] = &lwp_wrap; /* return address, calls actual function */
+    stack_top[-2] = 0; /* fake base pointer */
+    cont->state.rbp = 0;
+    cont->state.rsp = 0;
+    cont->state.rdi = function;
+    cont->state.rsi = argument;
+    cont->tid = thread_id;
+    thread_id = thread_id + 1;
+    /* Need to set anything else? */
+
+    return cont->tid;
 }
 
 void lwp_start() {

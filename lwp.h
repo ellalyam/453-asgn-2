@@ -41,7 +41,7 @@ typedef unsigned long tid t;
 typedef struct threadinfo st *thread;
 typedef struct threadinfo st {
     tid t tid; /* lightweight process id */
-    unsigned long *stack; /* Base of allocated stack *
+    unsigned long *stack; /* Base of allocated stack */
     size t stacksize; /* Size of allocated stack */
     rfile state; /* saved registers */
     unsigned int status; /* exited? exit status? */
