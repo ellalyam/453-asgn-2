@@ -82,7 +82,26 @@ typedef struct scheduler {
 
 /* LWP */
 tid_t lwp_create(lwpfun function, void *argument) {
-    /* */
+    /* Create the context */
+    thread contex = malloc(sizeof(context));
+
+    /* Create the stack */
+    struct rlimit rl;
+    getrlimit(RLIMIT_STACK, &rl);
+    long stack_size = rl.rlim_cur;
+    if(stack_size == RLIM_INFINITY) {
+        stack_size = 8000000;
+    }
+
+    void *stack = mmap(NULL, stack_size, PROT READ|PROT WRITE, MAP PRIVATE|MAP ANONYMOUS|MAP STACK, -1, 0)
+
+    if(stack==MAP_FAILED) {
+        /* Deal with error */
+        return NULL;
+    }
+
+    /* Fake stack frame */
+
     return;
 }
 
