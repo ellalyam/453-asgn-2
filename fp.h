@@ -52,7 +52,7 @@ struct __attribute__ ((aligned(16))) __attribute__ ((__packed__)) fxsave {
     __float128 xmm13;
     __float128 xmm14;
     __float128 xmm15;
-    uint8_t pad4[48];         /* For safety.  Manual says it's 512 bytes */
+    uint8_t pad4[48];/* For safety.  Manual says it's 512 bytes */
     #endif
 };
 

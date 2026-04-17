@@ -1,14 +1,15 @@
 #include <stdio.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include "lwp.c"
+
+int my_fun() {
+    return 67;
+}
+
 
 int main() {
-    long page_size = sysconf(_SC_PAGE_SIZE);
-    printf("Page size: %ld\n", page_size);
-
-    struct rlimit rl;
-    getrlimit(RLIMIT_STACK, &rl);
-    printf("Stack limit: %ld\n", (long)rl.rlim_cur);
-
+    lwp_create(my_fun, NULL);
+    printf("thread created successfully\n");
     return 0;
 }

@@ -1,10 +1,14 @@
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/resource.h>
+#include <unistd.h>
 #include "lwp.h"
+#include "fp.h"
 
 /* SCHEDULER */
 /* sched_one is PREVIOUS
    sched_two is NEXT */
 static thread head = NULL;
-static Scheduler current_sched = {NULL, NULL, &admit, &remove, &next, &qlen}
 
 void init() {
     /* don't need? */
@@ -16,23 +20,23 @@ void shutdown() {
 
 void admit(thread new) {
     if(head == NULL) {
-        return NULL;
+        return;
     }
 
     thread old_end = head->sched_one;
     head->sched_one = new;
-    new->sched_one = old_end:
+    new->sched_one = old_end;
     new->sched_two = head;
     old_end->sched_two = new;
 }
 
-void remove(thread victim) {
+void t_remove(thread victim) {
     thread current = head;
 
     while(current != head) {
         if(current == victim) {
-            left = victim->sched_one;
-            right = victim->sched_two;
+            thread left = victim->sched_one;
+            thread right = victim->sched_two;
             left->sched_two = right;
             right->sched_one = left;
 
@@ -71,15 +75,8 @@ int qlen() {
     return count;
 }
 
-typedef struct scheduler {
-    void init();
-    void shutdown();
-    void admit(thread new);
-    void remove(thread victim);
-    thread next();
-    int qlen();
-} Scheduler;
-
+struct scheduler sched = {NULL, NULL, &admit, &t_remove, &next, &qlen};
+static scheduler current_sched = &sched;
 
 /* LWP */
 static long thread_id = 1;
@@ -90,7 +87,7 @@ static void lwp_wrap(lwpfun fun, void *arg) {
     */
     int rval;
     rval=fun(arg);
-    lwp exit(rval);
+    lwp_exit(rval);
 }
 
 tid_t lwp_create(lwpfun function, void *argument) {
@@ -109,29 +106,29 @@ tid_t lwp_create(lwpfun function, void *argument) {
 
     if(stack_base==MAP_FAILED) {
         /* Deal with error */
-        return NULL;
+        return NO_THREAD;
     }
 
     /* Fake stack frame */
-    cont->stacksize = (unsigned long *)stack_size;
+    cont->stacksize = stack_size;
     cont->stack = stack_base;
 
-    void *stack_top = stack_base + stack_size;
+    unsigned long *stack_top = stack_base + stack_size;
 
-    stack_top[-1] = &lwp_wrap; /* return address, calls actual function */
+    stack_top[-1] = (unsigned long)lwp_wrap; /* return address, calls actual function */
     stack_top[-2] = 0; /* fake base pointer */
 
     /* setting new thread */
     cont->state.rbp = 0; /* any values, will be teared down anyways */
     cont->state.rsp = 0;
-    cont->state.rdi = function;
-    cont->state.rsi = argument;
+    cont->state.rdi = (unsigned long)function;
+    cont->state.rsi = (unsigned long)argument;
     cont->tid = thread_id;
     thread_id = thread_id + 1;
     /* Need to set anything else? */
 
     /* admit thread to scheduler */
-    current_scheduler->admit(cont);
+    current_sched->admit(cont);
 
     return cont->tid;
 }
@@ -167,7 +164,7 @@ void lwp_set_scheduler(scheduler sched) {
     /* */
 }
 
-schedule lwp_get_scheduler() {
+scheduler lwp_get_scheduler() {
     /* */
     return;
 }
