@@ -5,10 +5,19 @@
 #include "lwp.h"
 #include "fp.h"
 
+/* THINK THESE FUNCTIONS ARE MISSING STUFF.
+   DOUBLE CHECK INSTRUCTIONS */
+/* DOUBLE CHECK STACK */
+
+
 /* SCHEDULER */
 /* sched_one is PREVIOUS
    sched_two is NEXT */
 static thread head = NULL;
+static thread current_thread = NULL;
+
+static thread terminated = NULL;
+static thread waiting = NULL;
 
 void init() {
     /* don't need? */
@@ -20,20 +29,22 @@ void shutdown() {
 
 void admit(thread new) {
     if(head == NULL) {
-        return;
+        new->sched_one = new;
+        new->sched_two = new;
+        head = new;
+    } else {
+        thread old_end = head->sched_one;
+        head->sched_one = new;
+        new->sched_one = old_end;
+        new->sched_two = head;
+        old_end->sched_two = new;
     }
-
-    thread old_end = head->sched_one;
-    head->sched_one = new;
-    new->sched_one = old_end;
-    new->sched_two = head;
-    old_end->sched_two = new;
 }
 
 void t_remove(thread victim) {
-    thread current = head;
+    thread current = head->sched_two;
 
-    while(current != head) {
+    do {
         if(current == victim) {
             thread left = victim->sched_one;
             thread right = victim->sched_two;
@@ -44,9 +55,9 @@ void t_remove(thread victim) {
             victim->sched_two = NULL;
 
             break;
-        }
+        } 
         current = current->sched_two;
-    }
+    } while(current != head);
 
     /* add error for if reaching end of list without finding */
 }
@@ -56,8 +67,10 @@ thread next() {
         return NULL;
     }
 
+    thread next_thread = head;
     head = head->sched_two;
-    return head->sched_one;   
+    
+    return next_thread;   
 }
 
 int qlen() {
@@ -92,6 +105,7 @@ static void lwp_wrap(lwpfun fun, void *arg) {
 
 tid_t lwp_create(lwpfun function, void *argument) {
     /* Create the context */
+    printf("in create\n");
     thread cont = malloc(sizeof(context));
 
     /* Create the stack */
@@ -111,18 +125,20 @@ tid_t lwp_create(lwpfun function, void *argument) {
 
     /* Fake stack frame */
     cont->stacksize = stack_size;
-    cont->stack = stack_base;
+    cont->stack = (unsigned long *)stack_base;
 
-    unsigned long *stack_top = stack_base + stack_size;
+    unsigned long *stack_top = cont->stack + (stack_size / sizeof(unsigned long));
 
     stack_top[-1] = (unsigned long)lwp_wrap; /* return address, calls actual function */
     stack_top[-2] = 0; /* fake base pointer */
 
     /* setting new thread */
-    cont->state.rbp = 0; /* any values, will be teared down anyways */
-    cont->state.rsp = 0;
+    cont->state.rbp = (unsigned long)&stack_top[-2]; /* any values, will be teared down anyways */
+    cont->state.rsp = (unsigned long)&stack_top[-3];
     cont->state.rdi = (unsigned long)function;
     cont->state.rsi = (unsigned long)argument;
+    cont->status = LWP_LIVE;
+    cont->state.fxsave = FPU_INIT;
     cont->tid = thread_id;
     thread_id = thread_id + 1;
     /* Need to set anything else? */
@@ -134,37 +150,152 @@ tid_t lwp_create(lwpfun function, void *argument) {
 }
 
 void lwp_start() {
-    /* */
+    /* Calling thread -> LWP */
+    printf("in start\n");
+    thread cont = malloc(sizeof(context));
+    cont->tid = thread_id;
+    thread_id = thread_id + 1;
+    cont->stacksize = 0; /* Using the one created by the OS for main() */
+    cont->stack = NULL; /* Using the one created by the OS for main() */
+
+    /* Admit thread to scheduler */
+    current_sched->admit(cont);
+    current_thread = cont;
+
+    /* Call lwp_yield() */
+    lwp_yield();
 }
 
 void lwp_yield() {
-    /* */
+    /* Get next thread */
+    printf("in yield\n");
+    thread old_thread = current_thread;
+    thread next_thread = current_sched->next();
+
+    if(next_thread == NULL) {
+        exit(3);
+    }
+
+    printf("switching from tid %lu to tid %lu\n", old_thread->tid, next_thread->tid);
+    current_thread = next_thread;
+
+    /* Swap */
+    swap_rfiles(&old_thread->state, &next_thread->state);
+
+    printf("end yield\n");
 }
 
 void lwp_exit(int exitval) {
-    /* */
+    /* Set termination status */
+
+    /* Remove from scheduler and add to terminated queue */
+
+    /* Wake oldest in waiting queue (head) */
+
+    printf("lwp_exit called with %d\n", exitval);
+
+    /* Yield */
+    lwp_yield();
 }
 
 tid_t lwp_wait(int *status) {
-    /* */
+    /* Waits for a thread to terminate, deallocates its resources,
+       and reports its termination status if status is non-NULL.
+       Returns the tid of the terminated thread or NO THREAD */
+    
+    /* Case 1: Dead thread */
+    /* Get oldest in terminated queue */
+
+    /* Deallocate resources in stack */
+
+    /* Send status */
+
+    /* Return tid*/
+
+
+    /* NOT TOO SURE ABOUT THIS
+       Case 2: Threads still running */
+    /* Caller waiting -> move to waiting queue */
+    
+    /* Yield to another program */
+
+    /* Caller awake here. */
+
+    /* Get oldest thread in termination queue, deallocate resrouces */
+
+    /* Send status */
+
+    /* Return dead thread tid */
+
+
+    /* Case 3: None of the above */
+    /* Return NO_THREAD if qlen() < 1 */
+
     return;
 }
 
 tid_t lwp_gettid() {
-    /* */
-    return;
+    /* Returns the tid of the calling LWP or NO THREAD if not called by a LWP */
+    if(current_thread == NULL) {
+        return NO_THREAD;
+    }
+    return current_thread->tid;
 }
 
 thread tid2thread(tid_t tid) {
-    /* */
-    return;
+    /* Returns the thread corresponding to the given thread ID,
+       or NULL if the ID is invalid */
+    
+    /* idk fix after checking if wait and term are cycles */
+
+    thread found = NULL;
+    thread current_wait = waiting;
+    thread current_term = terminated;
+
+    /* Keep here if current_thread not in any of the lists */
+    if(current_thread->tid == tid) {
+        return current_thread;
+    }
+
+    /* Checking scheduler */
+    if(head != NULL) {
+        current = head;
+
+        do {
+            if(current->tid == tid) {
+                return current;
+            }
+            current = current->sched_two;
+        } while (current != head);
+    }
+
+    /* Checking waiting queue */
+    while(current_wait != NULL) {
+        if(current_wait->tid == tid) {
+            return current_wait;
+        }
+        current_wait = current_wait->sched_two;
+    }
+
+    /* Checking termination queue */
+    while(current_term != NULL) {
+        if (current_term->tid == tid) {
+            return current_term;
+        }
+        current_term = current_term->sched_two;
+    }
+
+    return NULL;
 }
 
 void lwp_set_scheduler(scheduler sched) {
-    /* */
+    /* Causes the LWP package to use the given scheduler to choose the
+       next process to run. Transfers all threads from the old scheduler
+       to the new one in next() order. If scheduler is NULL the library
+       should return to round-robin scheduling */
 }
 
 scheduler lwp_get_scheduler() {
-    /* */
-    return;
+    /* Returns the pointer to the current scheduler */
+    return current_sched;
 }
