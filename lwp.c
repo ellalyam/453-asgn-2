@@ -5,29 +5,38 @@
 #include "lwp.h"
 #include "fp.h"
 
+#define LWP_LIVE
+#define LWP_TERM
+#define MKTERMSTAT(s,v)
+#define LWPTERMINATED(s)
+#define LWPTERMSTAT(s)
+
 /* THINK THESE FUNCTIONS ARE MISSING STUFF.
    DOUBLE CHECK INSTRUCTIONS */
-/* DOUBLE CHECK STACK */
+/* CHECK STACK */
+/* CHECK SCHEDULER IS BEING PROPERLY UPDATED */
+/* CHECK TID INCREMENTING? */
 
 
 /* SCHEDULER */
-/* sched_one is PREVIOUS
-   sched_two is NEXT */
+/* sched_one is PREVIOUS, sched_two is NEXT */
 static thread head = NULL;
 static thread current_thread = NULL;
 
-static thread terminated = NULL;
-static thread waiting = NULL;
+static thread terminated_head = NULL;
+static thread terminated_tail = NULL;
+static thread waiting_head = NULL;
+static thread waiting_tail = NULL;
 
-void init() {
+void t_init() {
     /* don't need? */
 }
 
-void shutdown() {
+void t_shutdown() {
     /* don't need? */
 }
 
-void admit(thread new) {
+void t_admit(thread new) {
     if(head == NULL) {
         new->sched_one = new;
         new->sched_two = new;
@@ -73,7 +82,7 @@ thread next() {
     return next_thread;   
 }
 
-int qlen() {
+int t_qlen() {
     /* count var
     count as traversing
     return count*/
@@ -185,12 +194,31 @@ void lwp_yield() {
     printf("end yield\n");
 }
 
+/* NOTE: use sched_one & sched_two
+   OR exited thread pointer???? */
 void lwp_exit(int exitval) {
     /* Set termination status */
+    current_thread->status = MKTERMSTAT(LWP_TERM, exitval);
 
     /* Remove from scheduler and add to terminated queue */
+    current_sched->t_remove(current_thread);
+    if(terminated_head == NULL) {
+        terminated_head = current_thread;
+        terminated_tail = current_tail;
+    } else {
+        /* Currently have it as sched_one and sched_two but maybe change it? */
+        terminated_tail->sched_two = current_thread;
+        terminated_tail = current_thread;
+    }
 
     /* Wake oldest in waiting queue (head) */
+    if(waiting_head != NULL) {
+        thread waited = waiting_head;
+        waiting_head = waiting_head->sched_two;
+
+        waited->exited = current_thread;
+        current_sched->admit(waited);
+    }
 
     printf("lwp_exit called with %d\n", exitval);
 
@@ -198,14 +226,15 @@ void lwp_exit(int exitval) {
     lwp_yield();
 }
 
+/* NOTE: use lib_one & lib_two? */
 tid_t lwp_wait(int *status) {
-    /* Waits for a thread to terminate, deallocates its resources,
+    /* Waits for a thread to terminate, deallocates its resources (UNMAP!!!),
        and reports its termination status if status is non-NULL.
        Returns the tid of the terminated thread or NO THREAD */
     
-    /* Case 1: Dead thread */
+    /* Case 1: Zombie thread */
     /* Get oldest in terminated queue */
-
+    
     /* Deallocate resources in stack */
 
     /* Send status */
@@ -216,12 +245,14 @@ tid_t lwp_wait(int *status) {
     /* NOT TOO SURE ABOUT THIS
        Case 2: Threads still running */
     /* Caller waiting -> move to waiting queue */
-    
+
     /* Yield to another program */
 
-    /* Caller awake here. */
+    /* Wait here */
 
-    /* Get oldest thread in termination queue, deallocate resrouces */
+    /* Caller wakes up, 
+       get oldest thread in termination queue,
+       deallocate resources */
 
     /* Send status */
 
@@ -229,7 +260,9 @@ tid_t lwp_wait(int *status) {
 
 
     /* Case 3: None of the above */
-    /* Return NO_THREAD if qlen() < 1 */
+    if(qlen() < 1) {
+        return NO_THREAD;
+    }
 
     return;
 }
