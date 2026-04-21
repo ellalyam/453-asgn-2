@@ -208,7 +208,7 @@ void lwp_yield() {
     current_thread = next_thread;
     
     /* Swap */
-    swap_rfiles(&old_thread->state, &next_thread->state);
+    swap_rfiles(&old_thread->state, &current_thread->state);
 
 }
 
@@ -218,7 +218,6 @@ void lwp_exit(int exitval) {
     current_thread->status = MKTERMSTAT(LWP_TERM, exitval);
 
     /* Remove from scheduler and add to terminated queue */
-    current_sched->remove(current_thread);
     if(terminated_head == NULL) {
         terminated_head = current_thread;
         terminated_tail = current_thread;
@@ -228,8 +227,7 @@ void lwp_exit(int exitval) {
         terminated_tail = current_thread;
     }
     current_thread->lib_one = NULL;
-
-
+    
     /* Wake oldest in waiting queue (head) */
     if(waiting_head != NULL) {
         thread waited = waiting_head;
@@ -267,12 +265,20 @@ tid_t lwp_wait(int *status) {
     } else {
         /* Case 2: Threads still running */
         /* Caller waiting -> move to waiting queue */
+        if(waiting_head == NULL) {
+            waiting_head = current_thread;
+            waiting_tail = current_thread;
+        } else {
+            waiting_tail->lib_two = current_thread;
+            waiting_tail = waiting_tail->lib_two;
+        }
+
         current_sched->remove(current_thread);
-        waiting_tail->lib_two = current_thread;
-        waiting_tail = waiting_tail->lib_two;
 
         /* Yield to another program */
-        lwp_yield();
+        while(terminated_head == NULL) {
+            lwp_yield();
+        }
 
         /* Wait here */
 
