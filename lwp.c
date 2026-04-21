@@ -45,7 +45,11 @@ void admit(thread new) {
 void remove(thread victim) {
     if(victim->sched_one == victim) {
         head = NULL;
+        return 0;
     } else {
+        if(victim == head) {
+            head = victim->sched_two;
+        }
         thread left = victim->sched_one;
         thread right = victim->sched_two;
         left->sched_two = right;
@@ -62,10 +66,7 @@ thread next() {
         return NULL;
     }
 
-    thread next_thread = head;
-    head = head->sched_two;
-    
-    return next_thread;   
+    return head;   
 }
 
 int qlen() {
@@ -126,15 +127,23 @@ tid_t lwp_create(lwpfun function, void *argument) {
 
     unsigned long *stack_top = cont->stack + 
         (stack_size / sizeof(unsigned long));
+
+    //printf("before align: %p, mod 16 = %lu\n", 
+    //(void*)stack_top, (unsigned long)stack_top % 16);
+
     stack_top = (unsigned long *)((unsigned long)stack_top & ~0xFUL);
     //printf("top address: %p\n", (void *)stack_top);
+    //printf("after align:  %p, mod 16 = %lu\n", 
+    //(void*)stack_top, (unsigned long)stack_top % 16);
+
+    stack_top--;
 
     stack_top[-1] = (unsigned long)lwp_wrap;
     stack_top[-2] = 0; /* fake base pointer */
 
     /* setting new thread */
     cont->state.rbp = (unsigned long)&stack_top[-2];
-    cont->state.rsp = (unsigned long)&stack_top[-3];
+    cont->state.rsp = (unsigned long)&stack_top[-2];
     cont->state.rdi = (unsigned long)function;
     cont->state.rsi = (unsigned long)argument;
     cont->status = LWP_LIVE;
@@ -181,11 +190,11 @@ void lwp_yield() {
     thread next_thread = current_sched->next();
 
     if(next_thread == NULL) {
-        exit(3);
+       exit(LWPTERMSTAT(old_thread->status));
     }
 
     current_thread = next_thread;
-
+    
     /* Swap */
     swap_rfiles(&old_thread->state, &next_thread->state);
 
@@ -203,14 +212,16 @@ void lwp_exit(int exitval) {
         terminated_tail = current_thread;
     } else {
         /* Currently have it as sched_one and sched_two, maybe change? */
-        terminated_tail->sched_two = current_thread;
+        terminated_tail->lib_one = current_thread;
         terminated_tail = current_thread;
     }
+    current_thread->lib_one = NULL;
+
 
     /* Wake oldest in waiting queue (head) */
     if(waiting_head != NULL) {
         thread waited = waiting_head;
-        waiting_head = waiting_head->sched_two;
+        waiting_head = waiting_head->lib_two;
 
         waited->exited = current_thread;
         current_sched->admit(waited);
@@ -336,9 +347,7 @@ void lwp_set_scheduler(scheduler sched) {
        scheduler old = current_sched;
 
        if (sched == NULL) { /* can use init?? */
-            struct scheduler new = 
-                    {NULL, NULL, &admit, &remove, &next, &qlen};
-            scheduler sched = &new;
+            sched = &current_sched;
        }
 
        while (old->qlen() != 0){ /* or if next() != null? */

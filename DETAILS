@@ -1,31 +1,4 @@
 =================================================
-TEST 5: Check stack frame alignment
-
-----------
-Reference:
-----------
-Stack frame alignment appears correct.
-----------
-Submitted:
-----------
-*** Stack frame does not appear to be properly aligned.
-    The beginning (lowest address) of the arguments region
-    of the frame must be evenly divisible by 16
-Lowest arg addr: 0x7f30025d8fd8%16 = 8
-
----------------------------------
-Differences (< reference > output)
----------------------------------
-
-1c1,4
-< Stack frame alignment appears correct.
----
-> *** Stack frame does not appear to be properly aligned.
->     The beginning (lowest address) of the arguments region
->     of the frame must be evenly divisible by 16
-> Lowest arg addr: 0x7f30025d8fd8%16 = 8
----------
-=================================================
 TEST 8: Five lwps, calling lwp_yield(), then exit()
 
 This test spawns five threads that each print a message and yield.
@@ -47,25 +20,34 @@ I (4) am still alive.  Goodbye.
 ----------
 Submitted:
 ----------
-Child process (70825) exited due to signal (Segmentation fault).
+Greetings from Thread 0.  Yielding...
+I (0) am still alive.  Goodbye.
+Greetings from Thread 1.  Yielding...
+I (1) am still alive.  Goodbye.
+Greetings from Thread 2.  Yielding...
+I (2) am still alive.  Goodbye.
+Greetings from Thread 3.  Yielding...
+I (3) am still alive.  Goodbye.
+Greetings from Thread 4.  Yielding...
+I (4) am still alive.  Goodbye.
 
 ---------------------------------
 Differences (< reference > output)
 ---------------------------------
 
-1,10c1
-< Greetings from Thread 0.  Yielding...
+2,5d1
 < Greetings from Thread 1.  Yielding...
 < Greetings from Thread 2.  Yielding...
 < Greetings from Thread 3.  Yielding...
 < Greetings from Thread 4.  Yielding...
-< I (0) am still alive.  Goodbye.
-< I (1) am still alive.  Goodbye.
-< I (2) am still alive.  Goodbye.
-< I (3) am still alive.  Goodbye.
-< I (4) am still alive.  Goodbye.
----
-> Child process (70825) exited due to signal (Segmentation fault).
+6a3
+> Greetings from Thread 1.  Yielding...
+7a5
+> Greetings from Thread 2.  Yielding...
+8a7
+> Greetings from Thread 3.  Yielding...
+9a9
+> Greetings from Thread 4.  Yielding...
 ---------
 =================================================
 TEST 9: Five lwps, calling lwp_yield(), then lwp_exit()
@@ -89,7 +71,7 @@ LWPs have ended.
 ----------
 Submitted:
 ----------
-Child process (70857) exited due to signal (Segmentation fault).
+Child process (89894) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -108,7 +90,7 @@ Differences (< reference > output)
 < I (4) am still alive.  Goodbye.
 < LWPs have ended.
 ---
-> Child process (70857) exited due to signal (Segmentation fault).
+> Child process (89894) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 10: Five threads, variable iters, exit from front
@@ -140,7 +122,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (70896) exited due to signal (Segmentation fault).
+Child process (89926) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -165,7 +147,7 @@ Differences (< reference > output)
 <                         5
 < Back from LWPS.
 ---
-> Child process (70896) exited due to signal (Segmentation fault).
+> Child process (89926) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 11: Five threads, variable iters, exit from front
@@ -202,7 +184,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (70928) exited due to signal (Segmentation fault).
+Child process (89965) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -232,7 +214,7 @@ Differences (< reference > output)
 < A thread exited with status 5
 < Back from LWPS.
 ---
-> Child process (70928) exited due to signal (Segmentation fault).
+> Child process (89965) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 12: Five threads, variable iters, exit from back
@@ -265,7 +247,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (70960) exited due to signal (Segmentation fault).
+Child process (89997) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -290,7 +272,7 @@ Differences (< reference > output)
 <     1
 < Back from LWPS.
 ---
-> Child process (70960) exited due to signal (Segmentation fault).
+> Child process (89997) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 13: Five threads, AlwaysZero scheduling
@@ -323,7 +305,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (70995) exited due to signal (Segmentation fault).
+Child process (90028) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -348,35 +330,7 @@ Differences (< reference > output)
 <                         5
 < Back from LWPS.
 ---
-> Child process (70995) exited due to signal (Segmentation fault).
----------
-=================================================
-TEST 14: One lwp, yields, and returns
-
-This test spawns a single thread that prints a message, yields
-to itself, then returns
-
-----------
-Reference:
-----------
-Greetings from Thread 0.  Yielding...
-I'm still alive.  Goodbye
-After thread termination
-----------
-Submitted:
-----------
-Child process (71027) exited due to signal (Segmentation fault).
-
----------------------------------
-Differences (< reference > output)
----------------------------------
-
-1,3c1
-< Greetings from Thread 0.  Yielding...
-< I'm still alive.  Goodbye
-< After thread termination
----
-> Child process (71027) exited due to signal (Segmentation fault).
+> Child process (90028) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 15: Ten lwps, yields, and returns
@@ -411,7 +365,7 @@ After thread termination
 ----------
 Submitted:
 ----------
-Child process (71062) exited due to signal (Segmentation fault).
+Child process (90096) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -440,7 +394,7 @@ Differences (< reference > output)
 < I'm still alive.  Goodbye
 < After thread termination
 ---
-> Child process (71062) exited due to signal (Segmentation fault).
+> Child process (90096) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 16: Lwp spawns another then exits 100 times.
@@ -556,7 +510,7 @@ Bye
 ----------
 Submitted:
 ----------
-Child process (71096) exited due to signal (Segmentation fault).
+Child process (90128) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -665,7 +619,7 @@ Differences (< reference > output)
 < 1
 < Bye
 ---
-> Child process (71096) exited due to signal (Segmentation fault).
+> Child process (90128) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 17: Two Lwps. spawn then exits 50 times.
@@ -782,7 +736,7 @@ Bye
 ----------
 Submitted:
 ----------
-Child process (71128) exited due to signal (Segmentation fault).
+Child process (90159) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -892,7 +846,7 @@ Differences (< reference > output)
 < Bye
 < Bye
 ---
-> Child process (71128) exited due to signal (Segmentation fault).
+> Child process (90159) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 18: 1024 threads, random exit.
@@ -911,7 +865,7 @@ Done.  Count is 50000. (Yielded 406869 times)
 ----------
 Submitted:
 ----------
-Child process (71160) exited due to signal (Segmentation fault).
+Child process (90193) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -921,7 +875,7 @@ Differences (< reference > output)
 < Spawining 4096 threads.
 < Done.  Count is 50000. (Yielded 406869 times)
 ---
-> Child process (71160) exited due to signal (Segmentation fault).
+> Child process (90193) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 19: Ping pong with semaphores
@@ -960,7 +914,7 @@ Done.
 ----------
 Submitted:
 ----------
-Child process (71196) exited due to signal (Segmentation fault).
+Child process (90223) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -990,7 +944,7 @@ Differences (< reference > output)
 <    Ping...pong.
 < Done.
 ---
-> Child process (71196) exited due to signal (Segmentation fault).
+> Child process (90223) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 20: Dine with semaphores
@@ -1212,7 +1166,7 @@ Reference:
 ----------
 Submitted:
 ----------
-Child process (71229) exited due to signal (Segmentation fault).
+Child process (90258) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -1425,7 +1379,7 @@ Differences (< reference > output)
 < | -----       | -----       | -----       | -----       | -----       |
 < |=============|=============|=============|=============|=============|
 ---
-> Child process (71229) exited due to signal (Segmentation fault).
+> Child process (90258) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 21: Transfer threads between schedulers (stopped)
@@ -1462,7 +1416,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (71261) exited due to signal (Segmentation fault).
+Child process (90290) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -1489,7 +1443,7 @@ Differences (< reference > output)
 <                         5
 < Back from LWPS.
 ---
-> Child process (71261) exited due to signal (Segmentation fault).
+> Child process (90290) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 22: Transfer threads between schedulers (live)
@@ -1541,7 +1495,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (71293) exited due to signal (Segmentation fault).
+Child process (90322) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -1583,7 +1537,7 @@ Differences (< reference > output)
 <                         5
 < Back from LWPS.
 ---
-> Child process (71293) exited due to signal (Segmentation fault).
+> Child process (90322) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 23: Transfer threads to same scheduler (live)
@@ -1637,7 +1591,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (71331) exited due to signal (Segmentation fault).
+Child process (90354) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -1680,7 +1634,7 @@ Differences (< reference > output)
 <                         5
 < Back from LWPS.
 ---
-> Child process (71331) exited due to signal (Segmentation fault).
+> Child process (90354) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 24: Transfer threads between schedulers check for init/shutdown
@@ -1804,7 +1758,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (71365) exited due to signal (Segmentation fault).
+Child process (90385) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -1918,7 +1872,7 @@ Differences (< reference > output)
 < (second->next())
 < Back from LWPS.
 ---
-> Child process (71365) exited due to signal (Segmentation fault).
+> Child process (90385) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 26: Does tid2thread return the right thread?
@@ -2388,7 +2342,7 @@ Checking thread IDs...
 ----------
 Submitted:
 ----------
-Child process (71426) exited due to signal (Segmentation fault).
+Child process (90445) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -2847,7 +2801,7 @@ Differences (< reference > output)
 < Checking thread IDs...
 < ...done.
 ---
-> Child process (71426) exited due to signal (Segmentation fault).
+> Child process (90445) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 27: Tid2thread() returns NULL given a bad tid?
@@ -2865,7 +2819,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (71458) exited due to signal (Segmentation fault).
+Child process (90486) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -2876,7 +2830,7 @@ Differences (< reference > output)
 < tid2thread() coped with a bad value.
 < Back from LWPS.
 ---
-> Child process (71458) exited due to signal (Segmentation fault).
+> Child process (90486) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 28: Is thread library using sched_{one,two}?
@@ -3105,7 +3059,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (71496) exited due to signal (Segmentation fault).
+Child process (90518) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -3325,5 +3279,5 @@ Differences (< reference > output)
 <                                                           20
 < Back from LWPS.
 ---
-> Child process (71496) exited due to signal (Segmentation fault).
+> Child process (90518) exited due to signal (Segmentation fault).
 ---------
