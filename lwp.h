@@ -59,7 +59,7 @@ typedef struct scheduler {
     void (*init)(void); /* initialize any structures */
     void (*shutdown)(void); /* tear down any structures */
     void (*admit)(thread new); /* add a thread to the pool */
-    void (*remove)(thread victim); /* remove a thread from the pool */
+    void (*t_remove)(thread victim); /* remove a thread from the pool */
     thread (*next)(void); /* select a thread to schedule */
     int (*qlen)(void); /* number of ready threads */
 } *scheduler;
@@ -77,11 +77,11 @@ extern thread tid2thread(tid_t tid);
 
 /* for lwp wait */
 #define TERMOFFSET 8 
-#define MKTERMSTAT(a,b) ( (a)<<TERMOFFSET | ((b) & ((1<<TERMOFFSET)−1)) )
+#define MKTERMSTAT(a,b) ( (a)<<TERMOFFSET | ((b) & ((1<<TERMOFFSET)-1)) )
 #define LWP_TERM 1
 #define LWP_LIVE 0
-#define LWPTERMINATED(s) ( (((s)>>TERMOFFSET)&LWP TERM) == LWP TERM )
-#define LWPTERMSTAT(s) ( (s) & ((1<<TERMOFFSET)−1) )
+#define LWPTERMINATED(s) ( (((s)>>TERMOFFSET)&LWP TERM) == LWP_TERM )
+#define LWPTERMSTAT(s) ( (s) & ((1<<TERMOFFSET)-1) )
 
 /* prototypes for asm functions */
 void swap_rfiles(rfile *old, rfile *new);

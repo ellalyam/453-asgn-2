@@ -1,15 +1,10 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <unistd.h>
 #include "lwp.h"
 #include "fp.h"
-
-#define LWP_LIVE
-#define LWP_TERM
-#define MKTERMSTAT(s,v)
-#define LWPTERMINATED(s)
-#define LWPTERMSTAT(s)
 
 /* THINK THESE FUNCTIONS ARE MISSING STUFF.
    DOUBLE CHECK INSTRUCTIONS */
@@ -28,15 +23,15 @@ static thread terminated_tail = NULL;
 static thread waiting_head = NULL;
 static thread waiting_tail = NULL;
 
-void t_init() {
+void init() {
     /* don't need? */
 }
 
-void t_shutdown() {
+void shutdown() {
     /* don't need? */
 }
 
-void t_admit(thread new) {
+void admit(thread new) {
     if(head == NULL) {
         new->sched_one = new;
         new->sched_two = new;
@@ -82,7 +77,7 @@ thread next() {
     return next_thread;   
 }
 
-int t_qlen() {
+int qlen() {
     /* count var
     count as traversing
     return count*/
@@ -97,8 +92,8 @@ int t_qlen() {
     return count;
 }
 
-struct scheduler sched = {NULL, NULL, &admit, &t_remove, &next, &qlen};
-static scheduler current_sched = &sched;
+struct scheduler curr_sched = {NULL, NULL, &admit, &t_remove, &next, &qlen};
+static scheduler current_sched = &curr_sched;
 
 /* LWP */
 static long thread_id = 1;
@@ -125,7 +120,8 @@ tid_t lwp_create(lwpfun function, void *argument) {
         stack_size = 8388608;
     }
 
-    void *stack_base = mmap(NULL, stack_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0);
+    void *stack_base = mmap(NULL, stack_size, PROT_READ|PROT_WRITE,
+                            MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0);
 
     if(stack_base==MAP_FAILED) {
         /* Deal with error */
@@ -136,13 +132,14 @@ tid_t lwp_create(lwpfun function, void *argument) {
     cont->stacksize = stack_size;
     cont->stack = (unsigned long *)stack_base;
 
-    unsigned long *stack_top = cont->stack + (stack_size / sizeof(unsigned long));
+    unsigned long *stack_top = cont->stack + 
+        (stack_size / sizeof(unsigned long));
 
-    stack_top[-1] = (unsigned long)lwp_wrap; /* return address, calls actual function */
+    stack_top[-1] = (unsigned long)lwp_wrap;
     stack_top[-2] = 0; /* fake base pointer */
 
     /* setting new thread */
-    cont->state.rbp = (unsigned long)&stack_top[-2]; /* any values, will be teared down anyways */
+    cont->state.rbp = (unsigned long)&stack_top[-2];
     cont->state.rsp = (unsigned long)&stack_top[-3];
     cont->state.rdi = (unsigned long)function;
     cont->state.rsi = (unsigned long)argument;
@@ -185,7 +182,8 @@ void lwp_yield() {
         exit(3);
     }
 
-    printf("switching from tid %lu to tid %lu\n", old_thread->tid, next_thread->tid);
+    printf("switching from tid %lu to tid %lu\n", 
+                old_thread->tid, next_thread->tid);
     current_thread = next_thread;
 
     /* Swap */
@@ -194,8 +192,7 @@ void lwp_yield() {
     printf("end yield\n");
 }
 
-/* NOTE: use sched_one & sched_two
-   OR exited thread pointer???? */
+/* NOTE: use sched_one & sched_two OR exited thread pointer???? */
 void lwp_exit(int exitval) {
     /* Set termination status */
     current_thread->status = MKTERMSTAT(LWP_TERM, exitval);
@@ -204,9 +201,9 @@ void lwp_exit(int exitval) {
     current_sched->t_remove(current_thread);
     if(terminated_head == NULL) {
         terminated_head = current_thread;
-        terminated_tail = current_tail;
+        terminated_tail = current_thread;
     } else {
-        /* Currently have it as sched_one and sched_two but maybe change it? */
+        /* Currently have it as sched_one and sched_two, maybe change? */
         terminated_tail->sched_two = current_thread;
         terminated_tail = current_thread;
     }
@@ -226,45 +223,58 @@ void lwp_exit(int exitval) {
     lwp_yield();
 }
 
-/* NOTE: use lib_one & lib_two? */
+/* NOTE: use lib_one = terminated & lib_two = waiting */
 tid_t lwp_wait(int *status) {
     /* Waits for a thread to terminate, deallocates its resources (UNMAP!!!),
        and reports its termination status if status is non-NULL.
        Returns the tid of the terminated thread or NO THREAD */
     
     /* Case 1: Zombie thread */
-    /* Get oldest in terminated queue */
-    
-    /* Deallocate resources in stack */
+    if(terminated_head != NULL) {
+        /* Get oldest in terminated queue */
+        thread dealloc = terminated_head;
+        terminated_head = terminated_head->sched_two;
+        tid_t dealloc_tid = dealloc->tid;
 
-    /* Send status */
+        /* Deallocate resources in stack */
+        munmap(dealloc->stack, dealloc->stacksize);
 
-    /* Return tid*/
+        /* Send status */
+        
+        /* Return tid*/
+        return dealloc_tid;
 
+    } else {
+        /* Case 2: Threads still running */
+        /* Caller waiting -> move to waiting queue */
+        current_sched->t_remove(current_thread);
+        waiting_tail->lib_two = current_thread;
+        waiting_tail = waiting_tail->lib_two;
 
-    /* NOT TOO SURE ABOUT THIS
-       Case 2: Threads still running */
-    /* Caller waiting -> move to waiting queue */
+        /* Yield to another program */
+        lwp_yield();
 
-    /* Yield to another program */
+        /* Wait here */
 
-    /* Wait here */
+        /* Get oldest in terminated queue */
+        thread dealloc = terminated_head;
+        terminated_head = terminated_head->sched_two;
+        tid_t dealloc_tid = dealloc->tid;
 
-    /* Caller wakes up, 
-       get oldest thread in termination queue,
-       deallocate resources */
+        /* Deallocate resources in stack */
+        munmap(dealloc->stack, dealloc->stacksize);
 
-    /* Send status */
+        /* Send status */
+        
+        /* Return tid*/
+        return dealloc_tid;
 
-    /* Return dead thread tid */
-
+    }
 
     /* Case 3: None of the above */
     if(qlen() < 1) {
         return NO_THREAD;
     }
-
-    return;
 }
 
 tid_t lwp_gettid() {
@@ -281,9 +291,8 @@ thread tid2thread(tid_t tid) {
     
     /* idk fix after checking if wait and term are cycles */
 
-    thread found = NULL;
-    thread current_wait = waiting;
-    thread current_term = terminated;
+    thread current_wait = waiting_head;
+    thread current_term = terminated_head;
 
     /* Keep here if current_thread not in any of the lists */
     if(current_thread->tid == tid) {
@@ -292,7 +301,7 @@ thread tid2thread(tid_t tid) {
 
     /* Checking scheduler */
     if(head != NULL) {
-        current = head;
+        thread current = head;
 
         do {
             if(current->tid == tid) {
@@ -330,14 +339,15 @@ void lwp_set_scheduler(scheduler sched) {
        scheduler old = current_sched;
 
        if (sched == NULL) { /* can use init?? */
-            struct scheduler new = {NULL, NULL, &admit, &t_remove, &next, &qlen};
-            static scheduler sched = &new;
+            struct scheduler new = 
+                    {NULL, NULL, &admit, &t_remove, &next, &qlen};
+            scheduler sched = &new;
        }
 
        while (old->qlen() != 0){ /* or if next() != null? */
 
         thread t = old->next();
-        old->remove(t);
+        old->t_remove(t);
         sched->admit(t);
        }
 
