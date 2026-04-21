@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <unistd.h>
@@ -10,8 +9,6 @@
    DOUBLE CHECK INSTRUCTIONS */
 /* CHECK STACK */
 /* CHECK SCHEDULER IS BEING PROPERLY UPDATED */
-/* CHECK TID INCREMENTING? */
-
 
 /* SCHEDULER */
 /* sched_one is PREVIOUS, sched_two is NEXT */
@@ -45,24 +42,18 @@ void admit(thread new) {
     }
 }
 
-void t_remove(thread victim) {
-    thread current = head->sched_two;
-
-    do {
-        if(current == victim) {
-            thread left = victim->sched_one;
-            thread right = victim->sched_two;
-            left->sched_two = right;
-            right->sched_one = left;
-
-            victim->sched_one = NULL;
-            victim->sched_two = NULL;
-
-            break;
-        } 
-        current = current->sched_two;
-    } while(current != head);
-
+void remove(thread victim) {
+    if(victim->sched_one == victim) {
+        head = NULL;
+    } else {
+        thread left = victim->sched_one;
+        thread right = victim->sched_two;
+        left->sched_two = right;
+        right->sched_one = left;
+    }
+    
+    victim->sched_one = NULL;
+    victim->sched_two = NULL;
     /* add error for if reaching end of list without finding */
 }
 
@@ -87,12 +78,13 @@ int qlen() {
 
     while(current != head) {
         count = count + 1;
+        current = current->sched_two;
     }
 
     return count;
 }
 
-struct scheduler curr_sched = {NULL, NULL, &admit, &t_remove, &next, &qlen};
+struct scheduler curr_sched = {NULL, NULL, &admit, &remove, &next, &qlen};
 static scheduler current_sched = &curr_sched;
 
 /* LWP */
@@ -109,7 +101,6 @@ static void lwp_wrap(lwpfun fun, void *arg) {
 
 tid_t lwp_create(lwpfun function, void *argument) {
     /* Create the context */
-    printf("in create\n");
     thread cont = malloc(sizeof(context));
 
     /* Create the stack */
@@ -117,11 +108,12 @@ tid_t lwp_create(lwpfun function, void *argument) {
     getrlimit(RLIMIT_STACK, &rl);
     long stack_size = rl.rlim_cur;
     if(stack_size == RLIM_INFINITY) {
-        stack_size = 8388608;
+        stack_size = 8388608; /* MAGIC NUMBER */
     }
 
     void *stack_base = mmap(NULL, stack_size, PROT_READ|PROT_WRITE,
                             MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0);
+    //printf("base address: %p\n", (void *)stack_base);
 
     if(stack_base==MAP_FAILED) {
         /* Deal with error */
@@ -134,6 +126,8 @@ tid_t lwp_create(lwpfun function, void *argument) {
 
     unsigned long *stack_top = cont->stack + 
         (stack_size / sizeof(unsigned long));
+    stack_top = (unsigned long *)((unsigned long)stack_top & ~0xFUL);
+    //printf("top address: %p\n", (void *)stack_top);
 
     stack_top[-1] = (unsigned long)lwp_wrap;
     stack_top[-2] = 0; /* fake base pointer */
@@ -149,6 +143,7 @@ tid_t lwp_create(lwpfun function, void *argument) {
     thread_id = thread_id + 1;
     /* Need to set anything else? */
 
+
     /* admit thread to scheduler */
     current_sched->admit(cont);
 
@@ -157,12 +152,20 @@ tid_t lwp_create(lwpfun function, void *argument) {
 
 void lwp_start() {
     /* Calling thread -> LWP */
-    printf("in start\n");
+    //printf("START \n");
     thread cont = malloc(sizeof(context));
+    
     cont->tid = thread_id;
     thread_id = thread_id + 1;
     cont->stacksize = 0; /* Using the one created by the OS for main() */
     cont->stack = NULL; /* Using the one created by the OS for main() */
+    cont->status = LWP_LIVE;
+    cont->state.fxsave = FPU_INIT;
+    cont->lib_one = NULL;
+    cont->lib_two = NULL;
+    cont->exited = NULL;
+    cont->sched_one = NULL;
+    cont->sched_two = NULL;
 
     /* Admit thread to scheduler */
     current_sched->admit(cont);
@@ -174,7 +177,6 @@ void lwp_start() {
 
 void lwp_yield() {
     /* Get next thread */
-    printf("in yield\n");
     thread old_thread = current_thread;
     thread next_thread = current_sched->next();
 
@@ -182,14 +184,11 @@ void lwp_yield() {
         exit(3);
     }
 
-    printf("switching from tid %lu to tid %lu\n", 
-                old_thread->tid, next_thread->tid);
     current_thread = next_thread;
 
     /* Swap */
     swap_rfiles(&old_thread->state, &next_thread->state);
 
-    printf("end yield\n");
 }
 
 /* NOTE: use sched_one & sched_two OR exited thread pointer???? */
@@ -198,7 +197,7 @@ void lwp_exit(int exitval) {
     current_thread->status = MKTERMSTAT(LWP_TERM, exitval);
 
     /* Remove from scheduler and add to terminated queue */
-    current_sched->t_remove(current_thread);
+    current_sched->remove(current_thread);
     if(terminated_head == NULL) {
         terminated_head = current_thread;
         terminated_tail = current_thread;
@@ -216,8 +215,6 @@ void lwp_exit(int exitval) {
         waited->exited = current_thread;
         current_sched->admit(waited);
     }
-
-    printf("lwp_exit called with %d\n", exitval);
 
     /* Yield */
     lwp_yield();
@@ -247,7 +244,7 @@ tid_t lwp_wait(int *status) {
     } else {
         /* Case 2: Threads still running */
         /* Caller waiting -> move to waiting queue */
-        current_sched->t_remove(current_thread);
+        current_sched->remove(current_thread);
         waiting_tail->lib_two = current_thread;
         waiting_tail = waiting_tail->lib_two;
 
@@ -340,14 +337,14 @@ void lwp_set_scheduler(scheduler sched) {
 
        if (sched == NULL) { /* can use init?? */
             struct scheduler new = 
-                    {NULL, NULL, &admit, &t_remove, &next, &qlen};
+                    {NULL, NULL, &admit, &remove, &next, &qlen};
             scheduler sched = &new;
        }
 
        while (old->qlen() != 0){ /* or if next() != null? */
 
         thread t = old->next();
-        old->t_remove(t);
+        old->remove(t);
         sched->admit(t);
        }
 
