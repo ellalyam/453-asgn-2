@@ -21,7 +21,7 @@ static thread waiting_head = NULL;
 static thread waiting_tail = NULL;
 
 void init() {
-    /* don't need? */
+    /* initialize variables */
 }
 
 void shutdown() {
@@ -45,7 +45,9 @@ void admit(thread new) {
 void remove(thread victim) {
     if(victim->sched_one == victim) {
         head = NULL;
-        return 0;
+        victim->sched_one = NULL;
+        victim->sched_two = NULL;
+        return;
     } else {
         if(victim == head) {
             head = victim->sched_two;
@@ -66,7 +68,9 @@ thread next() {
         return NULL;
     }
 
-    return head;   
+    thread result = head;
+    head = head->sched_two;
+    return result;   
 }
 
 int qlen() {
@@ -103,6 +107,9 @@ static void lwp_wrap(lwpfun fun, void *arg) {
 tid_t lwp_create(lwpfun function, void *argument) {
     /* Create the context */
     thread cont = malloc(sizeof(context));
+    if(cont == NULL) {
+        return NO_THREAD;
+    }
 
     /* Create the stack */
     struct rlimit rl;
@@ -136,19 +143,24 @@ tid_t lwp_create(lwpfun function, void *argument) {
     //printf("after align:  %p, mod 16 = %lu\n", 
     //(void*)stack_top, (unsigned long)stack_top % 16);
 
-    stack_top--;
-
-    stack_top[-1] = (unsigned long)lwp_wrap;
-    stack_top[-2] = 0; /* fake base pointer */
+    stack_top[-3] = 0; /* fake saved rbp for swap_rfiles */
+    stack_top[-2] = (unsigned long)lwp_wrap; /* ret target from swap_rfiles */
+    stack_top[-1] = 0; /* fake return address for lwp_wrap */
+    
 
     /* setting new thread */
-    cont->state.rbp = (unsigned long)&stack_top[-2];
-    cont->state.rsp = (unsigned long)&stack_top[-2];
+    cont->state.rbp = (unsigned long)&stack_top[-3];
+    cont->state.rsp = (unsigned long)&stack_top[-3];
     cont->state.rdi = (unsigned long)function;
     cont->state.rsi = (unsigned long)argument;
     cont->status = LWP_LIVE;
     cont->state.fxsave = FPU_INIT;
     cont->tid = thread_id;
+    cont->lib_one = NULL;
+    cont->lib_two = NULL;
+    cont->sched_one = NULL;
+    cont->sched_two = NULL;
+    cont->exited = NULL;
     thread_id = thread_id + 1;
     /* Need to set anything else? */
 
