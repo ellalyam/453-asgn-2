@@ -33,34 +33,45 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (55242) exited due to signal (Segmentation fault).
+Creating LWPS
+Setting the scheduler.
+Launching LWPS
+    1
+              3
+                        5
+                   4
+         2
+              3
+                        5
+                   4
+         2
+              3
+                        5
+                   4
+                        5
+                   4
+                        5
+Back from LWPS.
 
 ---------------------------------
 Differences (< reference > output)
 ---------------------------------
 
-1,19c1
-< Creating LWPS
-< Setting the scheduler.
-< Launching LWPS
-<     1
+5d4
 <          2
+7d5
+<                    4
+8a7
+>                    4
+11d9
+<                    4
+13d10
 <               3
-<                    4
-<                         5
-<          2
-<               3
-<                    4
-<                         5
-<               3
-<                    4
-<                         5
-<                    4
-<                         5
-<                         5
-< Back from LWPS.
----
-> Child process (55242) exited due to signal (Segmentation fault).
+14a12,13
+>          2
+>               3
+17a17
+>                    4
 ---------
 =================================================
 TEST 22: Transfer threads between schedulers (live)
@@ -112,65 +123,6 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (55274) exited due to signal (Segmentation fault).
-
----------------------------------
-Differences (< reference > output)
----------------------------------
-
-1,34c1
-< Creating LWPS
-< Launching LWPS
-<     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-< Setting the scheduler.
-<     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-< Back from LWPS.
----
-> Child process (55274) exited due to signal (Segmentation fault).
----------
-=================================================
-TEST 23: Transfer threads to same scheduler (live)
-
-Create a number of threads, start them running,
-then set_scheduler() to the currently installed
-scheduler.
-
-
-
-
-
-----------
-Reference:
-----------
-Setting Scheduler
 Creating LWPS
 Launching LWPS
     1
@@ -188,70 +140,51 @@ Launching LWPS
               3
                    4
                         5
-Setting the scheduler to itself.
+Setting the scheduler.
     1
-         2
               3
-                   4
                         5
+                   4
+         2
     1
-         2
               3
-                   4
                         5
+                   4
+         2
     1
-         2
               3
-                   4
                         5
+                   4
+         2
 Back from LWPS.
-----------
-Submitted:
-----------
-Child process (55307) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
 ---------------------------------
 
-1,35c1
-< Setting Scheduler
-< Creating LWPS
-< Launching LWPS
-<     1
+20d19
 <          2
-<               3
+22d20
 <                    4
-<                         5
+24c22
 <     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-< Setting the scheduler to itself.
-<     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-< Back from LWPS.
 ---
-> Child process (55307) exited due to signal (Segmentation fault).
+>                    4
+25a24
+>     1
+27d25
+<                    4
+29c27
+<     1
+---
+>                    4
+30a29
+>     1
+32d30
+<                    4
+33a32,33
+>                    4
+>          2
 ---------
 =================================================
 TEST 24: Transfer threads between schedulers check for init/shutdown
@@ -375,55 +308,56 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (55339) exited due to signal (Segmentation fault).
+Creating LWPS
+Admitting new thread to First scheduler
+Admitting new thread to First scheduler
+Admitting new thread to First scheduler
+Admitting new thread to First scheduler
+Admitting new thread to First scheduler
+Launching LWPS
+Admitting new thread to First scheduler
+(first->next())
+    1
+(first->next())
+         2
+(first->next())
+              3
+(first->next())
+                   4
+(first->next())
+                        5
+(first->next())
+Removing thread from First scheduler
+(first->next())
+    1
+(first->next())
+         2
+(first->next())
+              3
+(first->next())
+                   4
+(first->next())
+                        5
+(first->next())
+    1
+(first->next())
+         2
+(first->next())
+              3
+(first->next())
+                   4
+(first->next())
+                        5
+Setting the scheduler.
+(second->next())
 
 ---------------------------------
 Differences (< reference > output)
 ---------------------------------
 
-1,106c1
+1d0
 < init: called on first scheduler
-< Creating LWPS
-< Admitting new thread to First scheduler
-< Admitting new thread to First scheduler
-< Admitting new thread to First scheduler
-< Admitting new thread to First scheduler
-< Admitting new thread to First scheduler
-< Launching LWPS
-< Admitting new thread to First scheduler
-< (first->next())
-<     1
-< (first->next())
-<          2
-< (first->next())
-<               3
-< (first->next())
-<                    4
-< (first->next())
-<                         5
-< (first->next())
-< Removing thread from First scheduler
-< (first->next())
-<     1
-< (first->next())
-<          2
-< (first->next())
-<               3
-< (first->next())
-<                    4
-< (first->next())
-<                         5
-< (first->next())
-<     1
-< (first->next())
-<          2
-< (first->next())
-<               3
-< (first->next())
-<                    4
-< (first->next())
-<                         5
-< Setting the scheduler.
+43,104d41
 < init: called on second scheduler
 < (first->next())
 < Removing thread from First scheduler
@@ -486,10 +420,8 @@ Differences (< reference > output)
 < (second->next())
 < Removing thread from Second scheduler
 < Admitting new thread to Second scheduler
-< (second->next())
+106d42
 < Back from LWPS.
----
-> Child process (55339) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 28: Is thread library using sched_{one,two}?
@@ -739,7 +671,7 @@ tid2thread() is returning bogus values
 tid2thread() is returning bogus values
 tid2thread() is returning bogus values
 tid2thread() is returning bogus values
-Child process (55455) exited due to signal (Segmentation fault).
+Child process (61432) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -980,5 +912,5 @@ Differences (< reference > output)
 > tid2thread() is returning bogus values
 > tid2thread() is returning bogus values
 > tid2thread() is returning bogus values
-> Child process (55455) exited due to signal (Segmentation fault).
+> Child process (61432) exited due to signal (Segmentation fault).
 ---------

@@ -4,29 +4,29 @@
 #include <string.h>
 #include <unistd.h>
 #include "lwp.h"
-#include "schedulers.h"
-#include "AlwaysZero.c"
+#include "rr.h"
+#include "rr.c"
 
 static void indentnum(uintptr_t num);
 
 int main(int argc, char *argv[]){
   long i;
 
-  lwp_set_scheduler(AlwaysZero);
-
-  printf("Launching LWPS\n");
+  printf("Creating LWPS\n");
 
   /* spawn a number of individual LWPs */
   for(i=1;i<=5;i++) {
     lwp_create((lwpfun)indentnum,(void*)i);
   }
 
+  printf("Setting the scheduler.\n");
+  lwp_set_scheduler(AltRoundRobin);
+  printf("Launching LWPS\n");
   lwp_start();                     /* returns when the last lwp exits */
 
   for(i=1;i<=5;i++) {
     lwp_wait(NULL);
   }
-
   printf("Back from LWPS.\n");
   return 0;
 }
@@ -42,7 +42,7 @@ static void indentnum(uintptr_t num) {
     printf("%*d\n",howfar*5,howfar);
     lwp_yield();                /* let another have a turn */
   }
-  lwp_exit(0);                  /* bail when done.  This should
+  lwp_exit(0);                   /* bail when done.  This should
                                  * be unnecessary if the stack has
                                  * been properly prepared
                                  */
