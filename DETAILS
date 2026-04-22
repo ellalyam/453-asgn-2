@@ -1,44 +1,4 @@
 =================================================
-TEST 9: Five lwps, calling lwp_yield(), then lwp_exit()
-
-This test spawns five LWPs, each of which yields once,
-then calls lwp_exit() the second time.
-----------
-Reference:
-----------
-Greetings from Thread 0.  Yielding...
-Greetings from Thread 1.  Yielding...
-Greetings from Thread 2.  Yielding...
-Greetings from Thread 3.  Yielding...
-Greetings from Thread 4.  Yielding...
-I (0) am still alive.  Goodbye.
-I (1) am still alive.  Goodbye.
-I (2) am still alive.  Goodbye.
-I (3) am still alive.  Goodbye.
-I (4) am still alive.  Goodbye.
-LWPs have ended.
-----------
-Submitted:
-----------
-Greetings from Thread 0.  Yielding...
-Greetings from Thread 1.  Yielding...
-Greetings from Thread 2.  Yielding...
-Greetings from Thread 3.  Yielding...
-Greetings from Thread 4.  Yielding...
-I (0) am still alive.  Goodbye.
-I (1) am still alive.  Goodbye.
-I (2) am still alive.  Goodbye.
-I (3) am still alive.  Goodbye.
-I (4) am still alive.  Goodbye.
-
----------------------------------
-Differences (< reference > output)
----------------------------------
-
-11d10
-< LWPs have ended.
----------
-=================================================
 TEST 11: Five threads, variable iters, exit from front
 
 This is the numbersmain program distributed with the assignment.
@@ -120,61 +80,6 @@ Differences (< reference > output)
 > A thread exited with status 253
 ---------
 =================================================
-TEST 12: Five threads, variable iters, exit from back
-
-This is the numbersmain program distributed with the assignment.
-Each thread (1..5) exits after N minus its number of iterations.
-The effect is to always have the last process call lwp_exit().
-
-
-----------
-Reference:
-----------
-Launching LWPS
-    1
-         2
-              3
-                   4
-                        5
-    1
-         2
-              3
-                   4
-    1
-         2
-              3
-    1
-         2
-    1
-Back from LWPS.
-----------
-Submitted:
-----------
-Launching LWPS
-    1
-         2
-              3
-                   4
-                        5
-    1
-         2
-              3
-                   4
-    1
-         2
-              3
-    1
-         2
-    1
-
----------------------------------
-Differences (< reference > output)
----------------------------------
-
-17d16
-< Back from LWPS.
----------
-=================================================
 TEST 13: Five threads, AlwaysZero scheduling
 
 This is the numbersmain program distributed with the assignment,
@@ -205,7 +110,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (102777) exited due to signal (Segmentation fault).
+Child process (41313) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -230,94 +135,7 @@ Differences (< reference > output)
 <                         5
 < Back from LWPS.
 ---
-> Child process (102777) exited due to signal (Segmentation fault).
----------
-=================================================
-TEST 15: Ten lwps, yields, and returns
-
-This test spawns several threads that prints a message, yields
-to itself, then returns
-
-----------
-Reference:
-----------
-Greetings from Thread 0.  Yielding...
-Greetings from Thread 1.  Yielding...
-Greetings from Thread 2.  Yielding...
-Greetings from Thread 3.  Yielding...
-Greetings from Thread 4.  Yielding...
-Greetings from Thread 5.  Yielding...
-Greetings from Thread 6.  Yielding...
-Greetings from Thread 7.  Yielding...
-Greetings from Thread 8.  Yielding...
-Greetings from Thread 9.  Yielding...
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-After thread termination
-----------
-Submitted:
-----------
-Greetings from Thread 0.  Yielding...
-Greetings from Thread 1.  Yielding...
-Greetings from Thread 2.  Yielding...
-Greetings from Thread 3.  Yielding...
-Greetings from Thread 4.  Yielding...
-Greetings from Thread 5.  Yielding...
-Greetings from Thread 6.  Yielding...
-Greetings from Thread 7.  Yielding...
-Greetings from Thread 8.  Yielding...
-Greetings from Thread 9.  Yielding...
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-I'm still alive.  Goodbye
-
----------------------------------
-Differences (< reference > output)
----------------------------------
-
-21d20
-< After thread termination
----------
-=================================================
-TEST 18: 1024 threads, random exit.
-
-Creat 1024 threads, each of which either yields or exits randomly until
-a counter reaches a given value.
-
-
-
-
-----------
-Reference:
-----------
-Spawining 4096 threads.
-Done.  Count is 50000. (Yielded 406869 times)
-----------
-Submitted:
-----------
-Spawining 4096 threads.
-
----------------------------------
-Differences (< reference > output)
----------------------------------
-
-2d1
-< Done.  Count is 50000. (Yielded 406869 times)
+> Child process (41313) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 19: Ping pong with semaphores
@@ -356,7 +174,7 @@ Done.
 ----------
 Submitted:
 ----------
-Child process (102966) exited due to signal (Segmentation fault).
+Child process (41490) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -386,7 +204,7 @@ Differences (< reference > output)
 <    Ping...pong.
 < Done.
 ---
-> Child process (102966) exited due to signal (Segmentation fault).
+> Child process (41490) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 20: Dine with semaphores
@@ -608,7 +426,7 @@ Reference:
 ----------
 Submitted:
 ----------
-Child process (102998) exited due to signal (Segmentation fault).
+Child process (41522) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -821,7 +639,7 @@ Differences (< reference > output)
 < | -----       | -----       | -----       | -----       | -----       |
 < |=============|=============|=============|=============|=============|
 ---
-> Child process (102998) exited due to signal (Segmentation fault).
+> Child process (41522) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 21: Transfer threads between schedulers (stopped)
@@ -858,7 +676,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (103030) exited due to signal (Segmentation fault).
+Child process (41555) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -885,7 +703,7 @@ Differences (< reference > output)
 <                         5
 < Back from LWPS.
 ---
-> Child process (103030) exited due to signal (Segmentation fault).
+> Child process (41555) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 22: Transfer threads between schedulers (live)
@@ -937,7 +755,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (103062) exited due to signal (Segmentation fault).
+Child process (41587) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -979,7 +797,7 @@ Differences (< reference > output)
 <                         5
 < Back from LWPS.
 ---
-> Child process (103062) exited due to signal (Segmentation fault).
+> Child process (41587) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 23: Transfer threads to same scheduler (live)
@@ -1033,7 +851,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (103093) exited due to signal (Segmentation fault).
+Child process (41619) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -1076,7 +894,7 @@ Differences (< reference > output)
 <                         5
 < Back from LWPS.
 ---
-> Child process (103093) exited due to signal (Segmentation fault).
+> Child process (41619) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 24: Transfer threads between schedulers check for init/shutdown
@@ -1200,7 +1018,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (103127) exited due to signal (Segmentation fault).
+Child process (41651) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -1314,7 +1132,7 @@ Differences (< reference > output)
 < (second->next())
 < Back from LWPS.
 ---
-> Child process (103127) exited due to signal (Segmentation fault).
+> Child process (41651) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 26: Does tid2thread return the right thread?
@@ -1784,7 +1602,7 @@ Checking thread IDs...
 ----------
 Submitted:
 ----------
-Child process (103187) exited due to signal (Segmentation fault).
+Child process (41713) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -2243,7 +2061,7 @@ Differences (< reference > output)
 < Checking thread IDs...
 < ...done.
 ---
-> Child process (103187) exited due to signal (Segmentation fault).
+> Child process (41713) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 27: Tid2thread() returns NULL given a bad tid?
@@ -2261,7 +2079,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (103220) exited due to signal (Segmentation fault).
+Child process (41745) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -2272,7 +2090,7 @@ Differences (< reference > output)
 < tid2thread() coped with a bad value.
 < Back from LWPS.
 ---
-> Child process (103220) exited due to signal (Segmentation fault).
+> Child process (41745) exited due to signal (Segmentation fault).
 ---------
 =================================================
 TEST 28: Is thread library using sched_{one,two}?
@@ -2501,7 +2319,7 @@ Back from LWPS.
 ----------
 Submitted:
 ----------
-Child process (103252) exited due to signal (Segmentation fault).
+Child process (41777) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -2721,5 +2539,5 @@ Differences (< reference > output)
 <                                                           20
 < Back from LWPS.
 ---
-> Child process (103252) exited due to signal (Segmentation fault).
+> Child process (41777) exited due to signal (Segmentation fault).
 ---------

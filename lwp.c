@@ -81,6 +81,10 @@ int qlen() {
     int count = 1;
     thread current = head->sched_two;
 
+    if(current == NULL) {
+        return 0;
+    }
+
     while(current != head) {
         count = count + 1;
         current = current->sched_two;
@@ -216,27 +220,27 @@ void lwp_yield() {
 void lwp_exit(int exitval) {
     /* Set termination status */
     current_thread->status = MKTERMSTAT(LWP_TERM, exitval);
-
-    /* Remove from scheduler and add to terminated queue */
-    if(terminated_head == NULL) {
-        terminated_head = current_thread;
-        terminated_tail = current_thread;
-    } else {
-        /* Currently have it as sched_one and sched_two, maybe change? */
-        terminated_tail->lib_one = current_thread;
-        terminated_tail = current_thread;
-    }
-    current_thread->lib_one = NULL;
     
     current_sched->remove(current_thread);
 
     /* Wake oldest in waiting queue (head) */
     if(waiting_head != NULL) {
         thread waited = waiting_head;
-        waiting_head = waiting_head->lib_two;
+        waiting_head = waiting_head->lib_one;
 
         waited->exited = current_thread;
         current_sched->admit(waited);
+    } else {
+        /* Remove from scheduler and add to terminated queue */
+        if(terminated_head == NULL) {
+            terminated_head = current_thread;
+            terminated_tail = current_thread;
+        } else {
+            /* Currently have it as sched_one and sched_two, maybe change? */
+            terminated_tail->lib_one = current_thread;
+            terminated_tail = current_thread;
+        }
+        current_thread->lib_one = NULL;
     }
 
     /* Yield */
@@ -248,9 +252,9 @@ tid_t lwp_wait(int *status) {
     /* Waits for a thread to terminate, deallocates its resources (UNMAP!!!),
        and reports its termination status if status is non-NULL.
        Returns the tid of the terminated thread or NO THREAD */
-    
+
     /* Case 1: Nothing in scheduler*/
-    if(current_sched->qlen() < 1) {
+    if(terminated_head == NULL && current_sched->qlen() <= 1) {
         return NO_THREAD;
     }
     
@@ -258,11 +262,13 @@ tid_t lwp_wait(int *status) {
     if(terminated_head != NULL) {
         /* Get oldest in terminated queue */
         thread dealloc = terminated_head;
-        terminated_head = terminated_head->sched_two;
+        terminated_head = terminated_head->lib_one;
         tid_t dealloc_tid = dealloc->tid;
 
         /* Deallocate resources in stack */
-        munmap(dealloc->stack, dealloc->stacksize);
+        if(dealloc->stack != NULL) {
+            munmap(dealloc->stack, dealloc->stacksize);
+        }
 
         /* Send status */
         
@@ -323,6 +329,9 @@ thread tid2thread(tid_t tid) {
     /* Returns the thread corresponding to the given thread ID,
        or NULL if the ID is invalid */
     
+    if(tid == NO_THREAD) {
+        return NULL;
+    }
     /* idk fix after checking if wait and term are cycles */
 
     thread current_wait = waiting_head;
