@@ -271,6 +271,9 @@ tid_t lwp_wait(int *status) {
         }
 
         /* Send status */
+        if(status != NULL) {
+            *status = dealloc->status;
+        }
         
         /* Return tid*/
         return dealloc_tid;
@@ -289,11 +292,6 @@ tid_t lwp_wait(int *status) {
             waiting_tail = waiting_tail->lib_two;
         }
 
-        /* Yield to another program */
-        /*while(terminated_head == NULL) {
-            lwp_yield();
-        }*/
-
         lwp_yield();
 
         /* Wait here */
@@ -309,7 +307,10 @@ tid_t lwp_wait(int *status) {
         }
 
         /* Send status */
-        
+        if(status != NULL) {
+            *status = dealloc->status;
+        }
+
         /* Return tid*/
         return dealloc_tid;
 

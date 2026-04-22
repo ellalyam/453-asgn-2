@@ -9,7 +9,6 @@ static void indentnum(uintptr_t num);
 
 int main(int argc, char *argv[]){
   long i;
-  int status;
 
   printf("Launching LWPS\n");
 
@@ -21,8 +20,7 @@ int main(int argc, char *argv[]){
   lwp_start();                     /* returns when the last lwp exits */
 
   for(i=1;i<=5;i++) {
-    lwp_wait(&status);
-    printf("A thread exited with status %d\n",LWPTERMSTAT(status));
+    lwp_wait(NULL);
   }
   printf("Back from LWPS.\n");
   return 0;
