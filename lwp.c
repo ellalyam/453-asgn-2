@@ -5,16 +5,15 @@
 #include "lwp.h"
 #include "fp.h"
 
-/* THINK THESE FUNCTIONS ARE MISSING STUFF.
-   DOUBLE CHECK INSTRUCTIONS */
-/* CHECK STACK */
-/* CHECK SCHEDULER IS BEING PROPERLY UPDATED */
+/* lib_one for WAITING/TERMINATED */
+/* lib_two for ALL THREADS */
 
 /* SCHEDULER */
 /* sched_one is PREVIOUS, sched_two is NEXT */
 static thread head = NULL;
 static thread current_thread = NULL;
 
+static thread all_threads = NULL;
 static thread terminated_head = NULL;
 static thread terminated_tail = NULL;
 static thread waiting_head = NULL;
@@ -162,13 +161,12 @@ tid_t lwp_create(lwpfun function, void *argument) {
     cont->state.fxsave = FPU_INIT;
     cont->tid = thread_id;
     cont->lib_one = NULL;
-    cont->lib_two = NULL;
+    cont->lib_two = all_threads;
+    all_threads = cont;
     cont->sched_one = NULL;
     cont->sched_two = NULL;
     cont->exited = NULL;
     thread_id = thread_id + 1;
-    /* Need to set anything else? */
-
 
     /* admit thread to scheduler */
     current_sched->admit(cont);
@@ -188,7 +186,8 @@ void lwp_start() {
     cont->status = LWP_LIVE;
     cont->state.fxsave = FPU_INIT;
     cont->lib_one = NULL;
-    cont->lib_two = NULL;
+    cont->lib_two = all_threads;
+    all_threads = cont;
     cont->exited = NULL;
     cont->sched_one = NULL;
     cont->sched_two = NULL;
@@ -289,8 +288,8 @@ tid_t lwp_wait(int *status) {
             waiting_head = current_thread;
             waiting_tail = current_thread;
         } else {
-            waiting_tail->lib_two = current_thread;
-            waiting_tail = waiting_tail->lib_two;
+            waiting_tail->lib_one = current_thread;
+            waiting_tail = waiting_tail->lib_one;
         }
 
         lwp_yield();
@@ -334,42 +333,18 @@ thread tid2thread(tid_t tid) {
     if(tid == NO_THREAD) {
         return NULL;
     }
-    /* idk fix after checking if wait and term are cycles */
-
-    thread current_wait = waiting_head;
-    thread current_term = terminated_head;
 
     /* Keep here if current_thread not in any of the lists */
     if(current_thread->tid == tid) {
         return current_thread;
     }
 
-    /* Checking scheduler */
-    if(head != NULL) {
-        thread current = head;
-
-        do {
-            if(current->tid == tid) {
-                return current;
-            }
-            current = current->sched_two;
-        } while (current != head);
-    }
-
-    /* Checking waiting queue */
-    while(current_wait != NULL) {
-        if(current_wait->tid == tid) {
-            return current_wait;
+    thread current = all_threads;
+    while(current != NULL) {
+        if(current->tid == tid) {
+            return current;
         }
-        current_wait = current_wait->sched_two;
-    }
-
-    /* Checking termination queue */
-    while(current_term != NULL) {
-        if (current_term->tid == tid) {
-            return current_term;
-        }
-        current_term = current_term->sched_two;
+        current = current->lib_two;
     }
 
     return NULL;

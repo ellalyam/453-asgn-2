@@ -4,31 +4,37 @@
 #include <string.h>
 #include <unistd.h>
 #include "lwp.h"
-#include "rr.h"
+#include "handsoff.h"
 
+#define INITIALSTACK 4096
+#define NUMTHREADS 20
+#define ITERS 1
 
-#define ROUNDS 6
+#define tnext sched_one
+#define tprev sched_two
+
+static void indentnum(uintptr_t num);
 
 typedef void (*sigfun)(int signum);
-static void indentnum(uintptr_t num);
 
 int main(int argc, char *argv[]){
   long i;
 
-  lwp_set_scheduler(AltRoundRobin);
-  printf("Creating LWPS\n");
+  lwp_set_scheduler(Handsoff);
+
+  printf("Launching LWPS\n");
 
   /* spawn a number of individual LWPs */
-  for(i=1;i<=5;i++) {
+  for(i=1;i<=NUMTHREADS;i++) {
     lwp_create((lwpfun)indentnum,(void*)i);
   }
 
-  printf("Launching LWPS\n");
   lwp_start();                     /* returns when the last lwp exits */
 
-  for(i=1;i<=5;i++) {
+  for(i=1;i<=NUMTHREADS;i++) {
     lwp_wait(NULL);
   }
+
   printf("Back from LWPS.\n");
   return 0;
 }
@@ -40,13 +46,8 @@ static void indentnum(uintptr_t num) {
   int howfar,i;
 
   howfar=(int)num;              /* interpret num as an integer */
-  for(i=0;i<ROUNDS;i++){
-    printf("%*d\n",howfar*5,howfar);
-    if ( num == 5 && i == 2 ) { /* end of third round */
-      printf("Setting the scheduler.\n");
-      lwp_set_scheduler(AltAltRoundRobin);
-    }
-
+  for(i=0;i<howfar;i++){
+    printf("%*d\n",howfar*3,howfar);
     lwp_yield();                /* let another have a turn */
   }
   lwp_exit(0);                   /* bail when done.  This should

@@ -246,7 +246,7 @@ tid2thread() is returning bogus values
 tid2thread() is returning bogus values
 tid2thread() is returning bogus values
 tid2thread() is returning bogus values
-Child process (91070) exited due to signal (Segmentation fault).
+Child process (96122) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -487,5 +487,5 @@ Differences (< reference > output)
 > tid2thread() is returning bogus values
 > tid2thread() is returning bogus values
 > tid2thread() is returning bogus values
-> Child process (91070) exited due to signal (Segmentation fault).
+> Child process (96122) exited due to signal (Segmentation fault).
 ---------
