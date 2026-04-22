@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include "lwp.h"
 #include "rr.h"
-#include "rr.c"
+
 
 #define ROUNDS 6
 
@@ -15,10 +15,9 @@ static void indentnum(uintptr_t num);
 int main(int argc, char *argv[]){
   long i;
 
-  printf("Setting Scheduler\n");
   lwp_set_scheduler(AltRoundRobin);
-
   printf("Creating LWPS\n");
+
   /* spawn a number of individual LWPs */
   for(i=1;i<=5;i++) {
     lwp_create((lwpfun)indentnum,(void*)i);
@@ -44,8 +43,8 @@ static void indentnum(uintptr_t num) {
   for(i=0;i<ROUNDS;i++){
     printf("%*d\n",howfar*5,howfar);
     if ( num == 5 && i == 2 ) { /* end of third round */
-      printf("Setting the scheduler to itself.\n");
-      lwp_set_scheduler(AltRoundRobin);
+      printf("Setting the scheduler.\n");
+      lwp_set_scheduler(AltAltRoundRobin);
     }
 
     lwp_yield();                /* let another have a turn */

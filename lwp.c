@@ -20,11 +20,12 @@ static thread terminated_tail = NULL;
 static thread waiting_head = NULL;
 static thread waiting_tail = NULL;
 
-void init() {
+static void init() {
     /* initialize variables */
+    
 }
 
-void shutdown() {
+static void shutdown() {
     /* don't need? */
 }
 
@@ -375,37 +376,32 @@ thread tid2thread(tid_t tid) {
 }
 
 void lwp_set_scheduler(scheduler sched) {
-    /* Causes the LWP package to use the given scheduler to choose the
-       next process to run. Transfers all threads from the old scheduler
-       to the new one in next() order. If scheduler is NULL the library
-       should return to round-robin scheduling */
-
-    scheduler old = current_sched;
-    thread rm_thread;
-    thread old_order[100];
-    int count = 0;
-
-    if (sched == NULL) { /* can use init?? */
-        sched = &current_sched;
+    if(sched == NULL) {
+        sched = &curr_sched;
     }
 
     if(sched == current_sched) {
         return;
     }
 
-    while ((rm_thread = old->next()) != NULL) {
-        old_order[count] = rm_thread;
-        count = count + 1;
-        old->remove(rm_thread);
+    scheduler old = current_sched;
+    thread t;
+
+    if(sched->init != NULL) {
+        sched->init();
     }
 
-    int i;
-    for(i = 0; i < count; i++) {
-        thread add_thread = old_order[i];
-        sched->admit(add_thread);
+    while ((t = old->next()) != NULL) {
+        old->remove(t);
+        sched->admit(t);
     }
-    
+
     current_sched = sched;
+
+    if(old->shutdown != NULL) {
+        old->shutdown();
+    }
+
 }
 
 scheduler lwp_get_scheduler() {
