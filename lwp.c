@@ -380,24 +380,26 @@ void lwp_set_scheduler(scheduler sched) {
        to the new one in next() order. If scheduler is NULL the library
        should return to round-robin scheduling */
 
-       scheduler old = current_sched;
+    scheduler old = current_sched;
 
-       if (sched == NULL) { /* can use init?? */
-            sched = current_sched;
-       }
+    if (sched == NULL) { /* can use init?? */
+        sched = current_sched;
+    }
 
-       while (old->qlen() != 0){ /* or if next() != null? */
-
+    while (old != NULL){ /* or if next() != null? */
         thread t = old->next();
-        old->remove(t);
-        sched->admit(t);
-       }
+        if (t != NULL) {
+            old->remove(t);
+            sched->admit(t);
+        }
+        old = t;
+    }
 
-       if (old) {
+    if (old) {
         old->shutdown();
-       }
+    }
 
-       current_sched = sched;
+    current_sched = sched;
     
 }
 
