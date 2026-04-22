@@ -1,6 +1,8 @@
 Names: Ashley Navos (anavos), Ella Yam (elyam)
 
-To run our program: "make" to compile our lwp library
+To run our program:
+    - "make" to compile our lwp library
+    - "make clean" to reset/remove compiled files
 
-Additional information: We finished this assignment at Denny's :P
+Additional information: We finished this assignment at Denny's! :P
 

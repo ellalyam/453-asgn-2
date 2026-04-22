@@ -13,7 +13,8 @@
    lib_one: waiting and terminated queues 
    lib_two: list of all threads 
    sched_one: previous thread in current scheduler 
-   sched_two: next thread in current scheduler */
+   sched_two: next thread in current scheduler 
+   exited: dead thread to be deallocated (used by caller in lwp_wait()) */
 
 static thread head = NULL; /* Head of current scheduler */
 static thread current_thread = NULL; /* Current thread of current scheduler */
@@ -220,7 +221,7 @@ void lwp_exit(int exitval) {
         thread waited = waiting_head;
         waiting_head = waiting_head->lib_one; /* Set head to next in queue*/
 
-        /* Exited of "waited" is the thread that is exiting */
+        /* Store thread that exited & needs deallocation (in exited pointer) */
         waited->exited = current_thread; 
 
         /* Admit waited back into scheduler (woken up again)*/
@@ -253,7 +254,7 @@ tid_t lwp_wait(int *status) {
     if(terminated_head != NULL) {
         /* Case 2: Zombie thread waiting in terminated queue */
 
-        /* Get oldest in terminated queue (head) */
+        /* Get oldest in terminated queue (head) & updated head */
         thread dealloc = terminated_head;
         terminated_head = terminated_head->lib_one;
         tid_t dealloc_tid = dealloc->tid;
@@ -291,7 +292,8 @@ tid_t lwp_wait(int *status) {
 
         /* Wait here for a thread to be added to terminated queue */
 
-        /* Get oldest in terminated queue (head) */
+        /* Get dead thread to be deallocated 
+           (stored in exited pointer of thread popped from waiting queue */
         thread dealloc = current_thread->exited;
         tid_t dealloc_tid = dealloc->tid;
 
