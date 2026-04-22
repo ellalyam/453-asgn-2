@@ -228,6 +228,8 @@ void lwp_exit(int exitval) {
     }
     current_thread->lib_one = NULL;
     
+    current_sched->remove(current_thread);
+
     /* Wake oldest in waiting queue (head) */
     if(waiting_head != NULL) {
         thread waited = waiting_head;
@@ -247,7 +249,12 @@ tid_t lwp_wait(int *status) {
        and reports its termination status if status is non-NULL.
        Returns the tid of the terminated thread or NO THREAD */
     
-    /* Case 1: Zombie thread */
+    /* Case 1: Nothing in scheduler*/
+    if(current_sched->qlen() < 1) {
+        return NO_THREAD;
+    }
+    
+    /* Case 2: Zombie thread */
     if(terminated_head != NULL) {
         /* Get oldest in terminated queue */
         thread dealloc = terminated_head;
@@ -263,8 +270,11 @@ tid_t lwp_wait(int *status) {
         return dealloc_tid;
 
     } else {
-        /* Case 2: Threads still running */
+        /* Case 3: Threads still running */
         /* Caller waiting -> move to waiting queue */
+        
+        current_sched->remove(current_thread);
+
         if(waiting_head == NULL) {
             waiting_head = current_thread;
             waiting_tail = current_thread;
@@ -273,22 +283,24 @@ tid_t lwp_wait(int *status) {
             waiting_tail = waiting_tail->lib_two;
         }
 
-        current_sched->remove(current_thread);
-
         /* Yield to another program */
-        while(terminated_head == NULL) {
+        /*while(terminated_head == NULL) {
             lwp_yield();
-        }
+        }*/
+
+        lwp_yield();
 
         /* Wait here */
 
         /* Get oldest in terminated queue */
-        thread dealloc = terminated_head;
-        terminated_head = terminated_head->sched_two;
+        thread dealloc = current_thread->exited;
+        /*terminated_head = terminated_head->lib_one;*/
         tid_t dealloc_tid = dealloc->tid;
 
         /* Deallocate resources in stack */
-        munmap(dealloc->stack, dealloc->stacksize);
+        if(dealloc->stack != NULL) {
+            munmap(dealloc->stack, dealloc->stacksize);
+        }
 
         /* Send status */
         
@@ -297,10 +309,6 @@ tid_t lwp_wait(int *status) {
 
     }
 
-    /* Case 3: None of the above */
-    if(qlen() < 1) {
-        return NO_THREAD;
-    }
 }
 
 tid_t lwp_gettid() {
@@ -365,7 +373,7 @@ void lwp_set_scheduler(scheduler sched) {
        scheduler old = current_sched;
 
        if (sched == NULL) { /* can use init?? */
-            sched = &current_sched;
+            sched = current_sched;
        }
 
        while (old->qlen() != 0){ /* or if next() != null? */

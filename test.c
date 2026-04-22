@@ -5,36 +5,31 @@
 #include <unistd.h>
 #include "lwp.h"
 
-static void indentnum(uintptr_t num);
-
-int main(int argc, char *argv[]){
-  long i;
-
-  printf("Launching LWPS\n");
-
-  /* spawn a number of individual LWPs */
-  for(i=1;i<=5;i++) {
-    lwp_create((lwpfun)indentnum,(void*)i);
-  }
-
-  lwp_start();                     /* returns when the last lwp exits */
-
-  for(i=1;i<=5;i++) {
-    lwp_wait(NULL);
-  }
-  printf("Back from LWPS.\n");
-  return 0;
-}
-
 static void indentnum(uintptr_t num) {
   /* print the number num num times, indented by 5*num spaces
    * Not terribly interesting, but it is instructive.
    */
-  int howfar,i;
+  int id;
+  id = (int)num;
+  printf("Greetings from Thread %d.  Yielding...\n",id);
+  lwp_yield();
+  printf("I (%d) am still alive.  Goodbye.\n",id);
+  lwp_exit(0);
+}
 
-  howfar=(int)num;              /* interpret num as an integer */
-  for(i=0;i<howfar;i++){
-    printf("%*d\n",howfar*5,howfar);
-    lwp_yield();                /* let another have a turn */
-  }
+
+int main(int argc, char *argv[]){
+  long i;
+
+  /* spawn a number of individual LWPs */
+  for(i=0;i<5;i++)
+    lwp_create((lwpfun)indentnum,(void*)i);
+
+  lwp_start();
+
+  for(i=0;i<5;i++)
+    lwp_wait(NULL);
+
+  printf("LWPs have ended.\n");
+  return 0;
 }
