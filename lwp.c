@@ -5,29 +5,27 @@
 #include "lwp.h"
 #include "fp.h"
 
-/* lib_one for WAITING/TERMINATED */
-/* lib_two for ALL THREADS */
+#define STACKSIZE 8388608
 
-/* SCHEDULER */
-/* sched_one is PREVIOUS, sched_two is NEXT */
-static thread head = NULL;
-static thread current_thread = NULL;
+/* This file contains all code for our implemented user level LWP package */
 
-static thread all_threads = NULL;
-static thread terminated_head = NULL;
-static thread terminated_tail = NULL;
-static thread waiting_head = NULL;
-static thread waiting_tail = NULL;
+/* What pointers within context represent: 
+   lib_one: waiting and terminated queues 
+   lib_two: list of all threads 
+   sched_one: previous thread in current scheduler 
+   sched_two: next thread in current scheduler */
 
-static void init() {
-    /* initialize variables */
-    
-}
+static thread head = NULL; /* Head of current scheduler */
+static thread current_thread = NULL; /* Current thread of current scheduler */
+static thread all_threads = NULL; /* Head of list of all threads */
+static thread terminated_head = NULL; /* Head of terminated queue */
+static thread terminated_tail = NULL; /* Tail of terminated queue */
+static thread waiting_head = NULL; /* Head of waiting queue */
+static thread waiting_tail = NULL; /* Tail of waiting queue */
 
-static void shutdown() {
-    /* don't need? */
-}
+static long thread_id = 1; /* Keeps track of next available thread id */
 
+/* Admits new thread to scheduler */
 void admit(thread new) {
     if(head == NULL) {
         new->sched_one = new;
@@ -42,6 +40,7 @@ void admit(thread new) {
     }
 }
 
+/* Removes thread from scheduler */
 void remove(thread victim) {
     if(victim->sched_one == victim) {
         head = NULL;
@@ -60,9 +59,9 @@ void remove(thread victim) {
     
     victim->sched_one = NULL;
     victim->sched_two = NULL;
-    /* add error for if reaching end of list without finding */
 }
 
+/* Moves head of scheduler to next thread */
 thread next() {
     if(head == NULL) {
         return NULL;
@@ -73,11 +72,8 @@ thread next() {
     return result;   
 }
 
+/* Returns number of threads in scheduler */
 int qlen() {
-    /* count var
-    count as traversing
-    return count*/
-
     int count = 1;
     thread current = head->sched_two;
 
@@ -93,23 +89,20 @@ int qlen() {
     return count;
 }
 
+/* Create current scheduler */
 struct scheduler curr_sched = {NULL, NULL, &admit, &remove, &next, &qlen};
 static scheduler current_sched = &curr_sched;
 
-/* LWP */
-static long thread_id = 1;
-
+/* Call the given lwp function with the given argument. */
 static void lwp_wrap(lwpfun fun, void *arg) {
-    /* Call the given lwpfunction with the given argument.
-    * Calls lwp exit() with its return value
-    */
     int rval;
     rval=fun(arg);
     lwp_exit(rval);
 }
 
+/* Creates a new LWP that executes the given function with the given argument */
 tid_t lwp_create(lwpfun function, void *argument) {
-    /* Create the context */
+    /* Create the thread context and null check */
     thread cont = malloc(sizeof(context));
     if(cont == NULL) {
         return NO_THREAD;
@@ -120,39 +113,33 @@ tid_t lwp_create(lwpfun function, void *argument) {
     getrlimit(RLIMIT_STACK, &rl);
     long stack_size = rl.rlim_cur;
     if(stack_size == RLIM_INFINITY) {
-        stack_size = 8388608; /* MAGIC NUMBER */
+        stack_size = STACKSIZE;
     }
 
+    /* Set stack base */
     void *stack_base = mmap(NULL, stack_size, PROT_READ|PROT_WRITE,
                             MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0);
-    //printf("base address: %p\n", (void *)stack_base);
 
     if(stack_base==MAP_FAILED) {
-        /* Deal with error */
         return NO_THREAD;
     }
 
-    /* Fake stack frame */
+    /* Create stack with fake values */
     cont->stacksize = stack_size;
     cont->stack = (unsigned long *)stack_base;
 
     unsigned long *stack_top = cont->stack + 
         (stack_size / sizeof(unsigned long));
 
-    //printf("before align: %p, mod 16 = %lu\n", 
-    //(void*)stack_top, (unsigned long)stack_top % 16);
-
-    stack_top = (unsigned long *)((unsigned long)stack_top & ~0xFUL);
-    //printf("top address: %p\n", (void *)stack_top);
-    //printf("after align:  %p, mod 16 = %lu\n", 
-    //(void*)stack_top, (unsigned long)stack_top % 16);
-
-    stack_top[-3] = 0; /* fake saved rbp for swap_rfiles */
-    stack_top[-2] = (unsigned long)lwp_wrap; /* ret target from swap_rfiles */
-    stack_top[-1] = 0; /* fake return address for lwp_wrap */
+    /* Round stack size to be divisible by 16 */
+    stack_top = (unsigned long *)(((unsigned long) stack_top + 15) & ~15);
+    
+    stack_top[-3] = 0; /* Fake saved rbp for swap_rfiles */
+    stack_top[-2] = (unsigned long)lwp_wrap; /* Ret address for swap_rfiles */
+    stack_top[-1] = 0; /* Fake return address for lwp_wrap */
     
 
-    /* setting new thread */
+    /* Setting values in thread struct */
     cont->state.rbp = (unsigned long)&stack_top[-3];
     cont->state.rsp = (unsigned long)&stack_top[-3];
     cont->state.rdi = (unsigned long)function;
@@ -161,24 +148,25 @@ tid_t lwp_create(lwpfun function, void *argument) {
     cont->state.fxsave = FPU_INIT;
     cont->tid = thread_id;
     cont->lib_one = NULL;
-    cont->lib_two = all_threads;
-    all_threads = cont;
+    cont->lib_two = all_threads; /* Add new thread to list of all threads */
+    all_threads = cont; /* Reset all_threads to point to head of list */
     cont->sched_one = NULL;
     cont->sched_two = NULL;
     cont->exited = NULL;
     thread_id = thread_id + 1;
 
-    /* admit thread to scheduler */
+    /* Admit thread to scheduler */
     current_sched->admit(cont);
 
     return cont->tid;
 }
 
+/* Starts LWP system by converting calling thread into LWP and yielding */
 void lwp_start() {
-    /* Calling thread -> LWP */
-    //printf("START \n");
+    /* Create context struct for calling thread */
     thread cont = malloc(sizeof(context));
     
+    /* Set values in context struct */
     cont->tid = thread_id;
     thread_id = thread_id + 1;
     cont->stacksize = 0; /* Using the one created by the OS for main() */
@@ -186,8 +174,8 @@ void lwp_start() {
     cont->status = LWP_LIVE;
     cont->state.fxsave = FPU_INIT;
     cont->lib_one = NULL;
-    cont->lib_two = all_threads;
-    all_threads = cont;
+    cont->lib_two = all_threads; /* Add new thread to list of all threads */
+    all_threads = cont; /* Reset all_threads to point to head of list */
     cont->exited = NULL;
     cont->sched_one = NULL;
     cont->sched_two = NULL;
@@ -196,71 +184,76 @@ void lwp_start() {
     current_sched->admit(cont);
     current_thread = cont;
 
-    /* Call lwp_yield() */
+    /* Yield to another thread in the system */
     lwp_yield();
 }
 
+/* Yields control to another LWP: saves current context, picks next thread,
+   and restores chosen thread's context the current LWP’s context */
 void lwp_yield() {
-    /* Get next thread */
     thread old_thread = current_thread;
     thread next_thread = current_sched->next();
 
+    /* Exit with the status of the original thread if no more threads*/
     if(next_thread == NULL) {
        exit(LWPTERMSTAT(old_thread->status));
     }
 
     current_thread = next_thread;
     
-    /* Swap */
+    /* Context switch between original thread and new thread to be run */
     swap_rfiles(&old_thread->state, &current_thread->state);
 
 }
 
-/* NOTE: use sched_one & sched_two OR exited thread pointer???? */
+/* Terminates the current LWP & yields to thread chosen by scheduler */
 void lwp_exit(int exitval) {
-    /* Set termination status */
+    /* Set termination status of exiting (current) thread */
     current_thread->status = MKTERMSTAT(LWP_TERM, exitval);
     
+    /* Remove current thread from the scheduler */
     current_sched->remove(current_thread);
 
-    /* Wake oldest in waiting queue (head) */
+    
     if(waiting_head != NULL) {
+        /* Wake oldest in waiting queue (head of queue) */
         thread waited = waiting_head;
-        waiting_head = waiting_head->lib_one;
+        waiting_head = waiting_head->lib_one; /* Set head to next in queue*/
 
-        waited->exited = current_thread;
-        current_sched->admit(waited);
+        /* Exited of "waited" is the thread that is exiting */
+        waited->exited = current_thread; 
+
+        /* Admit waited back into scheduler (woken up again)*/
+        current_sched->admit(waited); 
+
     } else {
-        /* Remove from scheduler and add to terminated queue */
+        /* Add exited thread to terminated queue if no waiting threads */
         if(terminated_head == NULL) {
             terminated_head = current_thread;
             terminated_tail = current_thread;
         } else {
-            /* Currently have it as sched_one and sched_two, maybe change? */
             terminated_tail->lib_one = current_thread;
             terminated_tail = current_thread;
         }
         current_thread->lib_one = NULL;
     }
 
-    /* Yield */
+    /* Yield to another thread */
     lwp_yield();
 }
 
-/* NOTE: use lib_one = terminated & lib_two = waiting */
+/* Waits for a thread to terminate, deallocates its resources, and reports
+   termination status if status is non-NULL. */
 tid_t lwp_wait(int *status) {
-    /* Waits for a thread to terminate, deallocates its resources (UNMAP!!!),
-       and reports its termination status if status is non-NULL.
-       Returns the tid of the terminated thread or NO THREAD */
-
-    /* Case 1: Nothing in scheduler*/
+    /* Case 1: Nothing in scheduler (besides main thread) */
     if(terminated_head == NULL && current_sched->qlen() <= 1) {
         return NO_THREAD;
     }
     
-    /* Case 2: Zombie thread */
     if(terminated_head != NULL) {
-        /* Get oldest in terminated queue */
+        /* Case 2: Zombie thread waiting in terminated queue */
+
+        /* Get oldest in terminated queue (head) */
         thread dealloc = terminated_head;
         terminated_head = terminated_head->lib_one;
         tid_t dealloc_tid = dealloc->tid;
@@ -270,20 +263,21 @@ tid_t lwp_wait(int *status) {
             munmap(dealloc->stack, dealloc->stacksize);
         }
 
-        /* Send status */
+        /* Report status */
         if(status != NULL) {
             *status = dealloc->status;
         }
         
-        /* Return tid*/
+        /* Return tid of dead thread */
         return dealloc_tid;
 
     } else {
-        /* Case 3: Threads still running */
-        /* Caller waiting -> move to waiting queue */
-        
+        /* Case 3: No dead threads in terminated queue */
+
+        /* Caller removed from scheduler */
         current_sched->remove(current_thread);
 
+        /* Caller added to waiting queue */
         if(waiting_head == NULL) {
             waiting_head = current_thread;
             waiting_tail = current_thread;
@@ -292,13 +286,13 @@ tid_t lwp_wait(int *status) {
             waiting_tail = waiting_tail->lib_one;
         }
 
+        /* Yield to another thread */
         lwp_yield();
 
-        /* Wait here */
+        /* Wait here for a thread to be added to terminated queue */
 
-        /* Get oldest in terminated queue */
+        /* Get oldest in terminated queue (head) */
         thread dealloc = current_thread->exited;
-        /*terminated_head = terminated_head->lib_one;*/
         tid_t dealloc_tid = dealloc->tid;
 
         /* Deallocate resources in stack */
@@ -306,30 +300,27 @@ tid_t lwp_wait(int *status) {
             munmap(dealloc->stack, dealloc->stacksize);
         }
 
-        /* Send status */
+        /* Report status */
         if(status != NULL) {
             *status = dealloc->status;
         }
 
-        /* Return tid*/
+        /* Return tid of dead thread */
         return dealloc_tid;
-
     }
 
 }
 
+/* Returns the tid of the current thread or NO THREAD if not called by a LWP */
 tid_t lwp_gettid() {
-    /* Returns the tid of the calling LWP or NO THREAD if not called by a LWP */
     if(current_thread == NULL) {
         return NO_THREAD;
     }
     return current_thread->tid;
 }
 
+/* Returns thread corresponding to given thread ID or NULL for invalid ID */
 thread tid2thread(tid_t tid) {
-    /* Returns the thread corresponding to the given thread ID,
-       or NULL if the ID is invalid */
-    
     if(tid == NO_THREAD) {
         return NULL;
     }
@@ -339,6 +330,8 @@ thread tid2thread(tid_t tid) {
         return current_thread;
     }
 
+    /* Look through all values in linked list of all threads
+       (starts with all_threads) until thread is found */
     thread current = all_threads;
     while(current != NULL) {
         if(current->tid == tid) {
@@ -347,39 +340,48 @@ thread tid2thread(tid_t tid) {
         current = current->lib_two;
     }
 
+    /* If tid isn't found, return NULL */
     return NULL;
 }
 
+/* Changes scheduler and transfers all threads to new scheduler */
 void lwp_set_scheduler(scheduler sched) {
+    /* Keep current scheduler if given is NULL */
     if(sched == NULL) {
-        sched = &curr_sched;
+        return;
     }
-
+    
+    /* Keep current scheduler if switching to the same one */
     if(sched == current_sched) {
         return;
     }
-
-    scheduler old = current_sched;
-    thread t;
-
+    
+    /* Initialize scheduler if init() exists */
     if(sched->init != NULL) {
         sched->init();
     }
+    
+    scheduler old = current_sched;
+    thread t;
 
+    /* Transfer all threads from old to new scheduler in next() order */
     while ((t = old->next()) != NULL) {
-        old->remove(t);
-        sched->admit(t);
+        old->remove(t); /* Removes thread from old scheduler */
+        sched->admit(t); /* Admits thread to new scheduler */
     }
 
+    /* Set new schedule to be the current scheduler */
     current_sched = sched;
 
+    /* Shutdown old scheduler if shutdown() exists */
     if(old->shutdown != NULL) {
         old->shutdown();
     }
 
 }
 
+/* Returns pointer to current scheduler */
 scheduler lwp_get_scheduler() {
-    /* Returns the pointer to the current scheduler */
     return current_sched;
 }
+ 
