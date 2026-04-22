@@ -381,18 +381,30 @@ void lwp_set_scheduler(scheduler sched) {
        should return to round-robin scheduling */
 
     scheduler old = current_sched;
-    thread t;
+    thread rm_thread;
+    thread old_order[100];
+    int count = 0;
 
-    
     if (sched == NULL) { /* can use init?? */
         sched = &current_sched;
     }
 
-    while ((t = old->next()) != NULL) {
-        old->remove(t);
-        sched->admit(t);
+    if(sched == current_sched) {
+        return;
     }
 
+    while ((rm_thread = old->next()) != NULL) {
+        old_order[count] = rm_thread;
+        count = count + 1;
+        old->remove(rm_thread);
+    }
+
+    int i;
+    for(i = 0; i < count; i++) {
+        thread add_thread = old_order[i];
+        sched->admit(add_thread);
+    }
+    
     current_sched = sched;
 }
 

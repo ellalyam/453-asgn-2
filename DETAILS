@@ -1,105 +1,4 @@
 =================================================
-TEST 23: Transfer threads to same scheduler (live)
-
-Create a number of threads, start them running,
-then set_scheduler() to the currently installed
-scheduler.
-
-
-
-
-
-----------
-Reference:
-----------
-Setting Scheduler
-Creating LWPS
-Launching LWPS
-    1
-         2
-              3
-                   4
-                        5
-    1
-         2
-              3
-                   4
-                        5
-    1
-         2
-              3
-                   4
-                        5
-Setting the scheduler to itself.
-    1
-         2
-              3
-                   4
-                        5
-    1
-         2
-              3
-                   4
-                        5
-    1
-         2
-              3
-                   4
-                        5
-Back from LWPS.
-----------
-Submitted:
-----------
-^CParent process (66071) caught signal (Interrupt).
-Forwarding signal (Interrupt) to child.
-Child process (66079) exited due to signal (Interrupt).
-
----------------------------------
-Differences (< reference > output)
----------------------------------
-
-1,35c1,3
-< Setting Scheduler
-< Creating LWPS
-< Launching LWPS
-<     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-< Setting the scheduler to itself.
-<     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-<     1
-<          2
-<               3
-<                    4
-<                         5
-< Back from LWPS.
----
-> ^CParent process (66071) caught signal (Interrupt).
-> Forwarding signal (Interrupt) to child.
-> Child process (66079) exited due to signal (Interrupt).
----------
-=================================================
 TEST 24: Transfer threads between schedulers check for init/shutdown
 
 Create a number of threads, start them running,
@@ -264,20 +163,20 @@ Removing thread from First scheduler
 Setting the scheduler.
 (first->next())
 Removing thread from First scheduler
-Admitting new thread to Second scheduler
 (first->next())
 Removing thread from First scheduler
-Admitting new thread to Second scheduler
 (first->next())
 Removing thread from First scheduler
-Admitting new thread to Second scheduler
 (first->next())
 Removing thread from First scheduler
-Admitting new thread to Second scheduler
 (first->next())
 Removing thread from First scheduler
-Admitting new thread to Second scheduler
 (first->next())
+Admitting new thread to Second scheduler
+Admitting new thread to Second scheduler
+Admitting new thread to Second scheduler
+Admitting new thread to Second scheduler
+Admitting new thread to Second scheduler
 (second->next())
     1
 (second->next())
@@ -333,8 +232,24 @@ Differences (< reference > output)
 < init: called on first scheduler
 43d41
 < init: called on second scheduler
-60d57
+46d43
+< Admitting new thread to Second scheduler
+49d45
+< Admitting new thread to Second scheduler
+52d47
+< Admitting new thread to Second scheduler
+55d49
+< Admitting new thread to Second scheduler
+58d51
+< Admitting new thread to Second scheduler
+60c53,57
 < shutdown: called on first scheduler
+---
+> Admitting new thread to Second scheduler
+> Admitting new thread to Second scheduler
+> Admitting new thread to Second scheduler
+> Admitting new thread to Second scheduler
+> Admitting new thread to Second scheduler
 ---------
 =================================================
 TEST 28: Is thread library using sched_{one,two}?
@@ -584,7 +499,7 @@ tid2thread() is returning bogus values
 tid2thread() is returning bogus values
 tid2thread() is returning bogus values
 tid2thread() is returning bogus values
-Child process (66318) exited due to signal (Segmentation fault).
+Child process (80953) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -825,5 +740,5 @@ Differences (< reference > output)
 > tid2thread() is returning bogus values
 > tid2thread() is returning bogus values
 > tid2thread() is returning bogus values
-> Child process (66318) exited due to signal (Segmentation fault).
+> Child process (80953) exited due to signal (Segmentation fault).
 ---------

@@ -36,17 +36,17 @@ Submitted:
 Creating LWPS
 Setting the scheduler.
 Launching LWPS
+                        5
     1
-              3
-                        5
-                   4
          2
               3
-                        5
                    4
+                        5
          2
               3
+                   4
                         5
+              3
                    4
                         5
                    4
@@ -57,21 +57,10 @@ Back from LWPS.
 Differences (< reference > output)
 ---------------------------------
 
-5d4
-<          2
-7d5
-<                    4
-8a7
->                    4
-11d9
-<                    4
-13d10
-<               3
-14a12,13
->          2
->               3
-17a17
->                    4
+3a4
+>                         5
+17d17
+<                         5
 ---------
 =================================================
 TEST 22: Transfer threads between schedulers (live)
@@ -141,20 +130,117 @@ Launching LWPS
                    4
                         5
 Setting the scheduler.
-    1
-              3
                         5
-                   4
+    1
          2
-    1
               3
-                        5
                    4
+                        5
+    1
          2
-    1
               3
-                        5
                    4
+                        5
+    1
+         2
+              3
+                   4
+Back from LWPS.
+
+---------------------------------
+Differences (< reference > output)
+---------------------------------
+
+18a19
+>                         5
+33d33
+<                         5
+---------
+=================================================
+TEST 23: Transfer threads to same scheduler (live)
+
+Create a number of threads, start them running,
+then set_scheduler() to the currently installed
+scheduler.
+
+
+
+
+
+----------
+Reference:
+----------
+Setting Scheduler
+Creating LWPS
+Launching LWPS
+    1
+         2
+              3
+                   4
+                        5
+    1
+         2
+              3
+                   4
+                        5
+    1
+         2
+              3
+                   4
+                        5
+Setting the scheduler to itself.
+    1
+         2
+              3
+                   4
+                        5
+    1
+         2
+              3
+                   4
+                        5
+    1
+         2
+              3
+                   4
+                        5
+Back from LWPS.
+----------
+Submitted:
+----------
+Setting Scheduler
+Creating LWPS
+Launching LWPS
+    1
+         2
+              3
+                   4
+                        5
+    1
+         2
+              3
+                   4
+                        5
+    1
+         2
+              3
+                   4
+                        5
+Setting the scheduler to itself.
+                   4
+    1
+                        5
+              3
+         2
+                   4
+    1
+                        5
+              3
+         2
+                   4
+    1
+                        5
+              3
          2
 Back from LWPS.
 
@@ -162,28 +248,30 @@ Back from LWPS.
 Differences (< reference > output)
 ---------------------------------
 
-20d19
+20,22d19
+<     1
 <          2
-22d20
-<                    4
-24c22
-<     1
+<               3
+24d20
+<                         5
+26c22
+<          2
 ---
->                    4
-25a24
->     1
-27d25
-<                    4
-29c27
-<     1
+>                         5
+27a24
+>          2
+29d25
+<                         5
+31c27
+<          2
 ---
->                    4
-30a29
+>                         5
+32a29
+>          2
+33a31
 >     1
-32d30
-<                    4
-33a32,33
->                    4
+34a33,34
+>               3
 >          2
 ---------
 =================================================
@@ -349,7 +437,68 @@ Removing thread from First scheduler
 (first->next())
                         5
 Setting the scheduler.
+(first->next())
+Removing thread from First scheduler
+(first->next())
+Removing thread from First scheduler
+(first->next())
+Removing thread from First scheduler
+(first->next())
+Removing thread from First scheduler
+(first->next())
+Removing thread from First scheduler
+(first->next())
+Admitting new thread to Second scheduler
+Admitting new thread to Second scheduler
+Admitting new thread to Second scheduler
+Admitting new thread to Second scheduler
+Admitting new thread to Second scheduler
 (second->next())
+         2
+(second->next())
+                   4
+(second->next())
+    1
+(second->next())
+                        5
+(second->next())
+              3
+(second->next())
+         2
+(second->next())
+                   4
+(second->next())
+    1
+(second->next())
+                        5
+(second->next())
+              3
+(second->next())
+         2
+(second->next())
+                   4
+(second->next())
+    1
+(second->next())
+                        5
+(second->next())
+              3
+(second->next())
+Removing thread from Second scheduler
+Admitting new thread to Second scheduler
+(second->next())
+Removing thread from Second scheduler
+(second->next())
+Removing thread from Second scheduler
+(second->next())
+Removing thread from Second scheduler
+(second->next())
+Removing thread from Second scheduler
+(second->next())
+Removing thread from Second scheduler
+Admitting new thread to Second scheduler
+(second->next())
+Back from LWPS.
 
 ---------------------------------
 Differences (< reference > output)
@@ -357,71 +506,59 @@ Differences (< reference > output)
 
 1d0
 < init: called on first scheduler
-43,104d41
+43d41
 < init: called on second scheduler
-< (first->next())
-< Removing thread from First scheduler
+46d43
 < Admitting new thread to Second scheduler
-< (first->next())
-< Removing thread from First scheduler
+49d45
 < Admitting new thread to Second scheduler
-< (first->next())
-< Removing thread from First scheduler
+52d47
 < Admitting new thread to Second scheduler
-< (first->next())
-< Removing thread from First scheduler
+55d49
 < Admitting new thread to Second scheduler
-< (first->next())
-< Removing thread from First scheduler
+58d51
 < Admitting new thread to Second scheduler
-< (first->next())
+60,62c53,57
 < shutdown: called on first scheduler
 < (second->next())
 <     1
-< (second->next())
-<          2
-< (second->next())
+---
+> Admitting new thread to Second scheduler
+> Admitting new thread to Second scheduler
+> Admitting new thread to Second scheduler
+> Admitting new thread to Second scheduler
+> Admitting new thread to Second scheduler
+66,67d60
 <               3
 < (second->next())
-<                    4
-< (second->next())
+70,71d62
 <                         5
 < (second->next())
-<     1
-< (second->next())
+74c65
 <          2
-< (second->next())
-<               3
-< (second->next())
+---
+>                         5
+78c69
 <                    4
-< (second->next())
+---
+>          2
+80c71
 <                         5
-< (second->next())
-<     1
-< (second->next())
+---
+>                    4
+84c75
 <          2
-< (second->next())
-<               3
-< (second->next())
-<                    4
-< (second->next())
-<                         5
-< (second->next())
-< Removing thread from Second scheduler
-< Admitting new thread to Second scheduler
-< (second->next())
-< Removing thread from Second scheduler
-< (second->next())
-< Removing thread from Second scheduler
-< (second->next())
-< Removing thread from Second scheduler
-< (second->next())
-< Removing thread from Second scheduler
-< (second->next())
-< Removing thread from Second scheduler
-< Admitting new thread to Second scheduler
-106d42
-< Back from LWPS.
+---
+>                         5
+87a79,80
+>          2
+> (second->next())
+89a83,84
+>     1
+> (second->next())
+90a86,87
+> (second->next())
+>               3
 ---------
 =================================================
 TEST 28: Is thread library using sched_{one,two}?
@@ -671,7 +808,7 @@ tid2thread() is returning bogus values
 tid2thread() is returning bogus values
 tid2thread() is returning bogus values
 tid2thread() is returning bogus values
-Child process (63681) exited due to signal (Segmentation fault).
+Child process (78464) exited due to signal (Segmentation fault).
 
 ---------------------------------
 Differences (< reference > output)
@@ -912,5 +1049,5 @@ Differences (< reference > output)
 > tid2thread() is returning bogus values
 > tid2thread() is returning bogus values
 > tid2thread() is returning bogus values
-> Child process (63681) exited due to signal (Segmentation fault).
+> Child process (78464) exited due to signal (Segmentation fault).
 ---------
