@@ -382,22 +382,18 @@ void lwp_set_scheduler(scheduler sched) {
 
     scheduler old = current_sched;
     thread t;
+
     
     if (sched == NULL) { /* can use init?? */
-        sched = current_sched;
+        sched = &current_sched;
     }
 
-    while(head != NULL) {
-        t = head;
-
+    while ((t = old->next()) != NULL) {
         old->remove(t);
         sched->admit(t);
-
-        old->next();
     }
 
     current_sched = sched;
-    
 }
 
 scheduler lwp_get_scheduler() {
